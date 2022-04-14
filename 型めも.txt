@@ -1,0 +1,35 @@
+int
+float
+bool 正誤 1dot
+str
+ str+str
+ str.find("Python")
+list
+ list.append(終端に追加する要素)
+ if a in A
+dict 辞書型、組み合わせの記録
+ dic = dict{}
+ dict[i]=a
+ True = a in dict
+set 集合、順番が無いリスト
+ s = set()
+ s.add(a)
+ s.remove(a)
+ s1 | s2
+ s1 & s2
+deque コンテナデータ、ソート不可、中間書き込み以外Listより優れた速度
+ d = deque()
+ d.append()#back
+ d.appendleft()#front
+ d.pop()#back
+ d.popleft()#front
+array 配列特化
+ import numpy as np
+ array1 = np.array([[input().split()]for _ in range(N)], dtype = int)
+ array0 = np.zeros(12).reshape(3, 4)
+
+ X = A.sum(axis=1)
+ Y = A.sum(axis=0)
+ B = np.add.outer(X,Y)-A
+ for a in B.tolist():
+    print(*a)

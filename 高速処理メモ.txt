@@ -1,0 +1,102 @@
+配列初期化
+
+ """
+ 1. list append
+ 1000000 0.156414
+ """
+ xs = []
+ for i in xrange(n):
+  xs.append(i)
+ 
+ """
+ 2. for
+ 1000000 0.0876
+ """
+ xs = [i for i in xrange(n)]
+ 
+ """
+ 3. [None]
+ 1000000 0.099896
+ """
+ xs = [None] * n
+ for i in xrange(n):
+  xs[i]
+ 
+ """
+ 4. [None] only
+ 1000000 0.005255
+ """ 
+ xs = [None] * n
+ 
+ """
+ 5. [0]
+ 1000000 0.005359
+ """
+ xs = [0] * n 
+ 
+ """
+ 6. array
+ 1000000 0.108973
+ """
+ xs = array('I', [ 0 for _ in xrange(n) ])
+  
+ """
+ 7. array
+ 1000000 0.149061
+ """
+ xs = array('I', [ i for i in xrange(n) ] )
+数列読み取り
+ start = time.clock()
+ r = Random()
+ ix = [i for i in xrange(n)]
+ r.shuffle(ix)
+ 
+ nay = [i for i in xrange(n)]
+ iay = array('I', [ i for i in xrange(n) ])
+ bay = array('b', [ 1 for _ in xrange(n) ])
+ 
+ start = time.clock()
+ 
+ """
+ 1. list
+ 10000000    0.367742
+ """
+ tmp = 0
+ for i in ix:
+   tmp = nay[i]
+  
+ """
+ 2. array
+ 10000000    0.263049
+ """
+ tmp = 0
+ for i in ix:
+   tmp = iay[i]
+  
+ """
+ 3. 1byte array
+ 10000000    0.232178
+ """
+ tmp = 0
+ for i in ix:
+   tmp = bay[i]
+  
+ end = time.clock()
+ print end - start 
+配列作成は[None]*nが高速
+ランダム・リードはarrayが強い
+配列の先頭削除は激遅※
+配列の先頭挿入も激遅※
+正規表現reは遅い
+文字列検索はinが速い
+標準入力は一旦バッファしてから処理すると良い
+※配列の先頭削除、先頭挿入はdequeを使いましょう。
+動的計画法
+ メモ探索:
+ 　    if MEMO[n]:
+        return MEMO[n]
+ 漸化式ループ:
+     for i in range(2, n + 1):
+        DP[i] = DP[i-1] + DP[i-2]
+    　return DP[n]
+ 
