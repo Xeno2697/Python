@@ -9,14 +9,14 @@ gamma = 0.9#割引率（数手後の報酬の減少係数）
 alpha = 0.1#学習率（今回の試行の結果を今までに対してどの程度重視するか）
 beta = 0.1#突然変異発生率
 map = np.array(np.zeros([7,6]))
-Q_table = {"1":array(7)}
+Q_table = {"apple":1}
 
 def map_serial(map):
     out : int = 0
     for i in range(7):
         for j in range(6):
             out *= 3
-            put += map[i,j]
+            out += map[i][j]
     if str(out) in Q_table:
         map
     else:
