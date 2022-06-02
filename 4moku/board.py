@@ -9,6 +9,9 @@ class board:
         self.Y=y
         self.WIN_CONDITION =win
         self.mp = np.zeros((self.X,self.Y))
+        self.mpp = np.zeros(2)
+        self.mpp[0] = np.zeros((self.X,self.Y))
+        self.mpp[1] = np.zeros((self.X,self.Y))
         self.last_put_x = 3
         self.last_put_y = 4
 
@@ -25,8 +28,9 @@ class board:
                 self.mp[x,i] = player
                 last_put_x = self.X
                 last_put_y = i
-                break
-        return self.mp
+                self.mpp[player-1][last_put_x,last_put_y]=1
+                return True
+        return False
 
     def pop(self,x):
         a = 0
@@ -34,6 +38,7 @@ class board:
             if self.mp[x,i] != 0:
                 a = self.mp[x,i]
                 self.mp[x,i] = 0
+                self.mpp[a-1][x,i]=0
                 break
         return a
 
@@ -77,8 +82,7 @@ class board:
             elif self.mp[self.last_put_x,i] == player:
                 count += 1
                 if count == 4:
-                    result = player
-                    break
+                    return player
             else:
                 count = 1
                 player = self.mp[self.last_put_x,i]
@@ -95,8 +99,7 @@ class board:
                 elif self.mp[i,self.last_put_y] == player:
                     count += 1
                     if count == self.WIN_CONDITION:
-                        result = player
-                        break
+                        return player
                 else:
                     count = 1
                     player = self.mp[i,self.last_put_y]
@@ -112,8 +115,7 @@ class board:
                     elif self.mp[self.last_put_x-a+i,self.last_put_y-a+i] == player:
                         count += 1
                         if count == 4:
-                            result = player
-                            break
+                            return player
                     else:
                         count = 1
                         player = self.mp[self.last_put_x-a+i,self.last_put_y-a+i]
@@ -129,12 +131,11 @@ class board:
                         elif self.mp[self.last_put_x+a-i,self.last_put_y-a+i] == player:
                             count += 1
                             if count == 4:
-                                result = player
-                                break
+                                return player
                         else:
                             count = 1
                             player = self.mp[self.last_put_x+a-i,self.last_put_y-a+i]
                         #print(last_put_x+a-i,last_put_y-a+i)
         if x != -1:
             board.pop(x)
-        return result
+        return -1
