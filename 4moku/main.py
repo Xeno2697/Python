@@ -13,8 +13,8 @@ X=7
 Y=6
 
 board = bd(7,6,4)
-player1 = QLplayer(board)
-player2 = QLplayer(board)
+player1 = QLplayer(board,False)
+player2 = QLplayer(board,True)
 
 for i in range(10000):
     result = 0
