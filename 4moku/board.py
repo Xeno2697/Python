@@ -15,25 +15,26 @@ class board:
     def capable_path(self):
         path = []
         for i in range(self.X):
-            if self.mpp[i,self.Y-1] == [0,0]:
+            if self.mpp[i,self.Y-1] == 0:
                 path.append(i)
         return path
     
-    def push(self,x : int,koma):
+    def push(self,x : int,koma :int):
         for i in range(self.Y):
-            if self.mpp[x,i] == np.zeros(2):
-                self.mpp[x,i] = np.array(koma)
-                self.last_put_x = self.X
+            if self.mpp[x,i] == 0:
+                self.mpp[x,i] = koma
+                self.last_put_x = x
                 self.last_put_y = i
                 return True
+        print('Error cannot push')
         return False
 
     def pop(self,x):
         a = 0
         for i in reversed(range(self.Y)):
-            if self.mpp[x,i] != [0,0]:
+            if self.mpp[x,i] != 0:
                 a = self.mpp[x,i]
-                self.mpp[x,i] = [0,0]
+                self.mpp[x,i] = 0
                 break
         return a
 
@@ -45,11 +46,11 @@ class board:
         for i in reversed(range(self.Y)):
             print('|',end='')
             for j in range(self.X):
-                if self.mpp[j,i] == [0,0]:
+                if self.mpp[j,i] == 0:
                     print(' ',end='')
-                elif self.mpp[j,i] == [1,0]:
+                elif self.mpp[j,i] == 1:
                     print('o',end='')
-                elif self.mpp[j,i] == [0,1]:
+                elif self.mpp[j,i] == -1:
                     print('x',end='')
             print('|')
         print('--',end='')
@@ -58,34 +59,33 @@ class board:
         print('')
 
     def reset(self):
-        mp = np.zeros(self.X,self.Y)
+        self.mpp = np.zeros((self.X,self.Y))
 
     def tupleout(self,reverse : bool = False):
         out = np.zeros((self.X,self.Y))
         if reverse:
-            for i in range(self.X):
-                for j in range(self.Y):
-                    out[i,j][0] = self.mpp[i,j][1]
-                    out[i,j][1] = self.mpp[i,j][0]
+            out *= -1
             return tuple(map(tuple, out))
         else:
             return tuple(map(tuple, self.mpp))
     
-    def judge(self,x=-1,play = [1,0]):#引数がない場合はそのまま、ある場合、配置後の仮想マップを判定
+    def judge(self,x=-1,play = 1):#引数がない場合はそのまま、ある場合、配置後の仮想マップを判定
         #最後に駒配置された縦列を勝敗確認
         play = np.array(play)
         if x != -1:
-            board.push(x,play)
+            self.push(x,play)
         player = 0
         count = 0
         result = 0
         for i in range(self.Y):
-            if self.mpp[self.last_put_x,i] == [0,0]:
+            if self.mpp[self.last_put_x,i] == 0:
                 count = 0
-                player = [0,0]
+                player = 0
             elif self.mpp[self.last_put_x,i] == player:
                 count += 1
-                if count == 4:
+                if count == self.WIN_CONDITION:
+                    if x != -1:
+                        self.pop(x)
                     return player
             else:
                 count = 1
@@ -93,16 +93,17 @@ class board:
 
         if result == 0:
             #最後に駒配置された横列を勝敗確認
-            player = [0,0]
+            player = 0
             count = 0
-            result = 0
             for i in range(self.X):
-                if self.mpp[i,self.last_put_y] == [0,0]:
+                if self.mpp[i,self.last_put_y] == 0:
                     count = 0
                     player = 0
                 elif self.mpp[i,self.last_put_y] == player:
                     count += 1
                     if count == self.WIN_CONDITION:
+                        if x != -1:
+                            self.pop(x)
                         return player
                 else:
                     count = 1
@@ -110,36 +111,47 @@ class board:
 
             if result == 0:
                 #\斜め確認
+                #print('|')
+                count = 0
+                player = 0
                 a = min(self.last_put_x,self.last_put_y)
-                b = min(self.X-self.last_put_x+a-1,self.Y-self.last_put_y+a-1)
+                b = min(self.X-self.last_put_x+a,self.Y-self.last_put_y+a)
                 for i in range(b):
-                    if self.mpp[self.last_put_x-a+i,self.last_put_y-a+i] == [0,0]:
+                    if self.mpp[self.last_put_x-a+i,self.last_put_y-a+i] == 0:
                         count = 0
-                        player = [0,0]
+                        player = 0
                     elif self.mpp[self.last_put_x-a+i,self.last_put_y-a+i] == player:
                         count += 1
-                        if count == 4:
+                        if count == self.WIN_CONDITION:
+                            if x != -1:
+                                self.pop(x)
                             return player
                     else:
                         count = 1
                         player = self.mpp[self.last_put_x-a+i,self.last_put_y-a+i]
+                    #print(self.last_put_x-a+i,self.last_put_y-a+i)
 
                 if result == 0:
                     #/斜め確認
+                    #print('/')
+                    count = 0
+                    player = 0
                     a = min(self.X-1-self.last_put_x,self.last_put_y)
                     b = min(self.last_put_x+a+1,self.Y-(self.last_put_y-a))
                     for i in range(b):
-                        if self.mpp[self.last_put_x+a-i,self.last_put_y-a+i] == [0,0]:
+                        if self.mpp[self.last_put_x+a-i,self.last_put_y-a+i] == 0:
                             count = 0
-                            player = [0.0]
+                            player = 0
                         elif self.mpp[self.last_put_x+a-i,self.last_put_y-a+i] == player:
                             count += 1
-                            if count == 4:
+                            if count == self.WIN_CONDITION:
+                                if x != -1:
+                                    self.pop(x)
                                 return player
                         else:
                             count = 1
                             player = self.mpp[self.last_put_x+a-i,self.last_put_y-a+i]
-                        #print(last_put_x+a-i,last_put_y-a+i)
+                        #print(self.last_put_x+a-i,self.last_put_y-a+i)
         if x != -1:
-            board.pop(x)
-        return -1
+            self.pop(x)
+        return 0
