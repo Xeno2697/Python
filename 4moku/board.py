@@ -53,6 +53,7 @@ class board:
                 elif self.mpp[j,i] == -1:
                     print('x',end='')
             print('|')
+        print(self.last_put_x,end='')
         print('--',end='')
         for i in range(self.X):
             print('-',end='')
@@ -62,10 +63,8 @@ class board:
         self.mpp = np.zeros((self.X,self.Y))
 
     def tupleout(self,reverse : bool = False):
-        out = np.zeros((self.X,self.Y))
         if reverse:
-            out *= -1
-            return tuple(map(tuple, out))
+            return tuple(map(tuple, self.mpp*-1))
         else:
             return tuple(map(tuple, self.mpp))
     

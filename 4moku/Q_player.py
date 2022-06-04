@@ -5,26 +5,25 @@ from board import board as bd
 import random
 import math
 
-X:int
-Y:int
-Q = {}
+X:int = 7
+Y:int = 6
+q = {}
 QMAX = 10000000 
 
 class QLplayer:
 
-    def __init__(self,board:bd,gote:bool = False,a=0.1,g=0.9,s=0.1):
+    def __init__(self,board:bd,gote:bool = False,a=0.35,g=0.95,s=0.0):
         self.alpha = a #学習率
         self.gamma = g #割引率
-        self.sigma = s
-        self.gote = gote #突然変異率
+        self.sigma = s #突然変異率
+        self.gote = gote 
         if gote:
             self.my = -1
             self.ene = 1
         else:
             self.my :int = 1
             self.ene :int = -1
-        X = board.X
-        Y = board.Y
+        self.q = q
     
     def choice(self,map:bd):
         result = -1
@@ -43,42 +42,34 @@ class QLplayer:
         if random.random() < self.sigma:
             return np.random.choice(path)
         #Q値から最大価値手を打つ。
-        else:
-            q = np.full(X,-inf)
-            for i in path:
-                q[i] = self.getQ(map,i)
-        return np.argmax(q)
-
-    def getQ(self,state:bd,act):
-        key = state.tupleout(self.gote)
-        if Q.get(key) is None:
-            Q[key] = np.zeros(X)
-        return Q[key][act]
+        c = np.full(X,-np.inf)
+        key = map.tupleout(self.gote)
+        if not key in q:
+            q[key] = np.zeros(X)
+        for i in path:
+            c[i] = q[key][i]
+        return np.argmax(c)
     
-    def learn(self,state:bd,act :int,reward :float):
+    def learn(self,state:bd,act :int,reward :float = 0):
         now_state = state.tupleout(self.gote)
-        if Q.get(now_state) is None:
-                Q[now_state] = np.zeros(7)  
+        if q.get(now_state) is None:
+                q[now_state] = np.zeros(7)  
         p :bool = state.push(act,self.my)
         next_state = state.tupleout(not self.gote)
         path = state.capable_path()
+
         if p:
             state.pop(act)
-        m = -inf
-        if Q.get(next_state) is None:
-                Q[next_state] = np.zeros(7)  
-        for i in path:            
-            if Q[next_state][i] >= m:
-                m = Q[next_state][i]
-        if reward != 0:
-            Q[now_state][act] = reward
-        else:
-            d :float = (( 1.0 - self.alpha )*Q[now_state][act])  +( m * self.gamma )
-            if d > QMAX:
-                d = QMAX
-            elif d < -QMAX:
-                d = -QMAX
-            Q[now_state][act] = d
-        return
-
         
+        m = -np.inf
+        if not next_state in q:
+            q[next_state] = np.zeros(X)
+        for i in path:            
+            if q[next_state][i] > m:
+                m = q[next_state][i]
+        
+        d = (( 1.0 - self.alpha )*q[now_state][act])  +( -m * self.gamma +reward)
+        q[now_state][act]  = d
+        if q[now_state][act] != 0:
+            print('',end='')
+        return
