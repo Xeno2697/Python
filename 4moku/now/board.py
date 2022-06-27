@@ -28,9 +28,11 @@ class board:
     def capable_path(self):
         path = []
         for i in range(self.X):
-            if self.map[i,self.Y-1] == 0:
+            if self.map[i][self.Y-1] == 0:
                 path.append(i)
-        return path
+        if path == []:
+            print("Error! capable path is None.")
+        return np.array(path)
      
     def reset(self):
         self.map = np.zeros((self.X,self.Y))
@@ -107,9 +109,7 @@ class board:
 
     def tupleout(self,gote:bool):
         a = 1
-        if gote:
-            a = -1
-        return tuple(map(tuple, self.map*a))
+        return tuple(map(tuple, self.map))
 
     def arrayout(self,gote):
         out = self.map
@@ -129,8 +129,11 @@ class board:
                     print(" ",end="")
                 elif a == 1:
                     print("○",end="")
-                else :
+                elif a == -1 :
                     print("x",end="")
+                else:
+                    print("Error!! On board, there is error koma",end="")
+                    print((i,j))
             print("|")
         for i in range(self.X+2):
             print("-",end="")

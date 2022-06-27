@@ -14,4 +14,6 @@ class eAI:
         if i != -1:
             return i+10000
         else:
-            return np.random.choice(mp.capable_path())
+            path = mp.capable_path()
+            i = np.random.choice(path)
+            return i
