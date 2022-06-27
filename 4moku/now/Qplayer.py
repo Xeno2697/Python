@@ -50,7 +50,8 @@ class Qplayer:
             
     def learn(self,mp:bd,act,gote:bool,reward= 0):
         map_array = mp.arrayout(gote)
-        yet_Q = self.qget(tuple(map(tuple, map_array)),act) 
+        t = mp.tupleout(gote)
+        yet_Q = self.qget(t,act) 
         koma = 0
         if gote:
             koma = -1
@@ -59,9 +60,15 @@ class Qplayer:
         for i in range(self.Y):
             if map_array[act,i] == 0:
                 map_array[act,i] = koma
+                break
         if not gote:
             map_array *= -1
-        next_Qarray = self.qget(tuple(map(tuple,map_array)),-1)
+            next_Qarray = self.qget(tuple(map(tuple,map_array)),-1)
+            map_array[act,i] = 0
+        else:
+            next_Qarray = self.qget(tuple(map(tuple,map_array)),-1)
+            map_array[act,i] = 0
+
         l = -inf
         for i in range(self.X):
             if map_array[i,self.Y-1] == 0:
@@ -70,7 +77,6 @@ class Qplayer:
                     l=q
         if l == -inf:
             l = 0
-        t = mp.tupleout(gote)
         if reward > 0:
             self.Q[t][act] = ((1.0 - self.alpha)*yet_Q)  + (reward)
         else:

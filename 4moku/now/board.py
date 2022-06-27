@@ -112,7 +112,7 @@ class board:
         return tuple(map(tuple, self.map))
 
     def arrayout(self,gote):
-        out = self.map
+        out = self.map.copy()
         if gote:
             out *= -1
         return out

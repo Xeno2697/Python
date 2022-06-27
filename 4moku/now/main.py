@@ -9,7 +9,7 @@ class main:
         self.X = X
         self.Y = Y
         self.board = board(X,Y,winnum)
-        self.Qplayer = Qplayer(self.board,0.35,0.95,0.0)
+        self.Qplayer = Qplayer(self.board,0.45,0.90,0.1)
         self.easyai = eAI()
         return
 
@@ -94,8 +94,8 @@ class main:
 
         wb = openpyxl.Workbook()
         s1 = wb.get_sheet_by_name(wb.get_sheet_names()[0])
-        for i,key in enumerate(self.Qplayer.Q):
-            #s1.cell(row=i+1,column=1,value="Qarray")
+        for i,key in tqdm(enumerate(self.Qplayer.Q)):
+        #    s1.cell(row=i+1,column=1,value="Qarray")
             for j in range(self.X):
                 s1.cell(row=i+1,column=j+2,value=self.Qplayer.Q[key][j])
         wb.save('test.xlsx')
