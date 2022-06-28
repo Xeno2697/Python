@@ -16,8 +16,10 @@ class main:
     def start(self,time):
         qwin = 0
         ewin = 0
+        win1 = 0
+        win2 = 0
 
-        for i in tqdm(range(time)):
+        for i in (range(time)):
             #EvsQ
             self.board.reset()
             for j in range((int)((self.X*self.Y)/2)):
@@ -76,6 +78,14 @@ class main:
                     self.Qplayer.learn(self.board,c,True,0)
                     self.board.push(c,-1)
             #self.board.print()
+            if i % 100 == 100-1:
+                print(i,end="")
+                print("_",end="")
+                print((qwin-win1)*100/(ewin-win2+qwin-win1),end="")
+                print("%")
+                win1 = qwin
+                win2 = ewin
+
         
         print("EasyAI win ",end="")
         print(ewin)
@@ -85,7 +95,7 @@ class main:
         wb = openpyxl.Workbook()
         s1 = wb.get_sheet_by_name(wb.get_sheet_names()[0])
         for i,key in enumerate(self.Qplayer.Q):
-            s1.cell(row=i+1,column=1,value="Qarray")
+            #s1.cell(row=i+1,column=1,value="Qarray")
             for j in range(self.X):
                 s1.cell(row=i+1,column=j+2,value=self.Qplayer.Q[key][j])
         wb.save('test.xlsx')
