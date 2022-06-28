@@ -9,7 +9,7 @@ class main:
         self.X = X
         self.Y = Y
         self.board = board(X,Y,winnum)
-        self.Qplayer = Qplayer(self.boar,0.35,0.95,0.0)
+        self.Qplayer = Qplayer(self.board,0.35,0.95,0.0)
         self.easyai = eAI()
         return
 
