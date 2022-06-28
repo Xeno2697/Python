@@ -1,5 +1,4 @@
 from cmath import inf
-from tkinter.tix import MAX
 import numpy as np
 import random
 from board import board as bd
@@ -54,22 +53,26 @@ class Qplayer:
         yet_Q = self.qget(tuple(map(tuple, map_array)),act) 
         koma = 0
         if gote:
-            koma = 1
-        else:
             koma = -1
+        else:
+            koma = 1
+        for i in range(self.Y):
+            if map_array[act,i] == 0:
+                map_array[act,i] = koma
+        if not gote:
+            map_array *= -1
+        next_Qarray = self.qget(tuple(map(tuple,map_array)),-1)
         l = -inf
-        for i in range(self.X):           
+        for i in range(self.X):
             if map_array[i,self.Y-1] == 0:
-                for j in range(self.Y):
-                    if map_array[i,j] == 0:
-                        map_array[i,j] = koma
-                        break
-                q = self.qget(tuple(map(tuple, map_array)),i)
-                if l < q:
-                    l = q
-                map_array[i,j] = 0
+                q = next_Qarray[i]
+                if l<q:
+                    l=q
+        if l == -inf:
+            l = 0
         t = mp.tupleout(gote)
-        self.Q[t][act] = ((1.0 - self.alpha)*yet_Q)  + ( -l * self.gamma +reward)
-
+        if reward > 0:
+            self.Q[t][act] = ((1.0 - self.alpha)*yet_Q)  + (reward)
+        else:
+            self.Q[t][act] = ((1.0 - self.alpha)*yet_Q)  + ( -l * self.gamma)
         return
-
