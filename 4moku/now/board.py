@@ -38,8 +38,8 @@ class board:
         self.map = np.zeros((self.X,self.Y))
         return
     
-    def search(self,koma,mpp = np.zeros(0)):
-        if mpp == np.zeros(0):
+    def search(self,koma,mpp = 0):
+        if mpp is 0:
             mpp = self.map.copy()
         #　mppは必ず複製数列を使用すること
         for i in range(self.X):
