@@ -47,24 +47,41 @@ class RED:
         self.anker_inblood = 0
         self.anker_vectol = (0,0)
         self.num = 0
+        self.move_back = False
+        self.move_vectol = (0,0)
         
         
     def move_random(self,logimap:logicalmap, vectol = (0,0)):
+        if(self.move_back):
+            self.move_back = False
+            xd = -self.move_vectol[0] * 1.0
+            yd = -self.move_vectol[1] * 1.0
+            self.x += xd
+            self.y += yd
+            return 0
         while(True):
-            dis = math.sqrt( vectol[0]**2 + vectol[1]**2 )
-            
-            if(dis < 0.00000005):
-                angle = (random.random()-0.5)*2.0*math.pi
+            x_move = 0
+            y_move = 0
+            if(random.random() < 0.8):
+                x_move = self.move_vectol[0]
+                y_move = self.move_vectol[1]
             else:
-                rad = math.atan2(vectol[1], vectol[0])
-                angle = random.gauss(rad, math.pi/2*RED_MOVE_Alpha)
-            x_move = math.cos(angle)
-            y_move = math.sin(angle)
+                dis = math.sqrt( vectol[0]**2 + vectol[1]**2 )
+                if(dis < 0.00000005):
+                    angle = (random.random()-0.5)*2.0*math.pi
+                else:
+                    rad = math.atan2(vectol[1], vectol[0])
+                    angle = random.gauss(rad, math.pi/2*RED_MOVE_Alpha)
+                x_move = math.cos(angle)
+                y_move = math.sin(angle)
             i = round(self.x+x_move)
             j = round(self.y+y_move)
             if(logimap.map[j][i] == 0):
-                self.x += x_move * 1.0
-                self.y += y_move * 1.0
+                xd = x_move * 1.0
+                yd = y_move * 1.0
+                self.x += xd
+                self.y += yd
+                self.move_vectol = (xd, yd)
                 break
             else:
                 break
@@ -80,7 +97,7 @@ class RED_list:
             self.list[i] = RED(RED_POS_X,RED_POS_Y)
         for i in range(3):
             self.list[i].anker = True
-        self.list[0].anker_inblood = 0.0
+        self.list[1].anker_inblood = -BLOOD_BLEEDING
         self.list[1].x = RED_POS_X+5
         self.list[2].y = RED_POS_Y+5
         self.path[0][1] = True
@@ -90,7 +107,7 @@ class RED_list:
         self.path[2][0] = True
         self.path[2][1] = True
 
-            
+    #REDから見通し出来るかつ、通信可能距離に存在するアンカーのリストを取得        
     def search(self,i):
         x = self.list[i].x
         y = self.list[i].y
@@ -117,18 +134,21 @@ class RED_list:
     def judge_anker(self,i):
         marker_list,vectol = self.search(i)
         n = len(marker_list)
-        if(n == 2):
-            #for j in range(n):
-            #    if(marker_list[j][1] < UWB_DISTANCE_MIN):
-            #        return
+        min_dis = UWB_DISTANCE_MAX
+        for j in range(n):
+            if(min_dis > marker_list[j][1]):
+                min_dis = marker_list[j][1]
+        if(n == 3 and min_dis > 5):
             self.list[i].anker = True
             self.list[i].anker_inblood = -BLOOD_BLEEDING
-            self.path[i][marker_list[0][0]] = True
-            self.path[marker_list[0][0]][i] = True
-            self.path[i][marker_list[1][0]] = True
-            self.path[marker_list[1][0]][i] = True
-            line.append([(self.list[i].x,self.list[i].y),(self.list[marker_list[0][0]].x,self.list[marker_list[0][0]].y)])
-            line.append([(self.list[i].x,self.list[i].y),(self.list[marker_list[1][0]].x,self.list[marker_list[1][0]].y)])
+            for j in range(n):
+                self.path[i][marker_list[j][0]] = True
+                self.path[marker_list[j][0]][i] = True
+                line.append([(self.list[i].x,self.list[i].y),(self.list[marker_list[j][0]].x,self.list[marker_list[j][0]].y)])
+        elif(n <= 2):
+            self.list[i].move_back = True
+            return
+            
             
     #コンテナ付近では、出血に応じた量の造血を行い、貧血を治すと同時に、コンテナ中心とした流れを生み出す。
     def hematopoiesis(self,i):
@@ -199,36 +219,37 @@ ims = []
 fig = plt.figure(figsize=(8, 8), dpi=120)
 ax = fig.add_subplot(aspect='1')
 #シミュレーションターン数
-for i in range(100):
+for i in range(600):
     #全ユニット行動
     redlist.action(logimap)
     
-    #描画
-    x = []
-    y = []
-    x_anker = []
-    y_anker = []
-    x_anker_blood = []
-    y_anker_blood = []
-    for j in range(redlist.n):
-        if(not redlist.list[j].anker):
-            x.append(redlist.list[j].x)
-            y.append(redlist.list[j].y)
-        else:
-            x_anker.append(redlist.list[j].x)
-            y_anker.append(redlist.list[j].y)
-            x_anker_blood.append(redlist.list[j].anker_vectol[0])
-            y_anker_blood.append(redlist.list[j].anker_vectol[1])
-    X = np.array(x_anker)
-    Y = np.array(y_anker)
-    U = np.array(x_anker_blood)
-    V = np.array(y_anker_blood)
-    lc = collections.LineCollection(line)
-    ims.append([plt.scatter(x,y,c="red"),
-                plt.scatter(x_anker,y_anker,c = "blue"),
-                ax.add_collection(lc),
-                plt.quiver(X,Y,U,V,color=(1.0,0.0,0.0,0.2), angles='xy',scale_units='xy', scale=5.0)])#,ax.imshow(logimap.map)])
-    print(i)
+    if(i%5 == 0):
+        #描画
+        x = []
+        y = []
+        x_anker = []
+        y_anker = []
+        x_anker_blood = []
+        y_anker_blood = []
+        for j in range(redlist.n):
+            if(not redlist.list[j].anker):
+                x.append(redlist.list[j].x)
+                y.append(redlist.list[j].y)
+            else:
+                x_anker.append(redlist.list[j].x)
+                y_anker.append(redlist.list[j].y)
+                x_anker_blood.append(redlist.list[j].anker_vectol[0])
+                y_anker_blood.append(redlist.list[j].anker_vectol[1])
+        X = np.array(x_anker)
+        Y = np.array(y_anker)
+        U = np.array(x_anker_blood)
+        V = np.array(y_anker_blood)
+        lc = collections.LineCollection(line)
+        ims.append([plt.scatter(x,y,c="red"),
+                    plt.scatter(x_anker,y_anker,c = "blue"),
+                    ax.add_collection(lc),
+                    plt.quiver(X,Y,U,V,color=(1.0,0.0,0.0,0.2), angles='xy',scale_units='xy', scale=5.0)])#,ax.imshow(logimap.map)])
+        print(i)
 plt.xlim(0,50)
 plt.ylim(0,50)
 ani = animation.ArtistAnimation(fig, ims, interval=10.0)
