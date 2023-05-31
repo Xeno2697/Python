@@ -113,7 +113,8 @@ class logicalmap:
                 return True
         if(x < 0 or x > MAP_SIZE or y < 0 or y > MAP_SIZE):
             return True
-        return False                  
+        return False
+                      
 class RED: 
     def __init__(self,x,y):
         self.position = np.array((x,y),dtype=float)
