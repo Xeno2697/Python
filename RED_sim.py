@@ -61,10 +61,11 @@ class blood_path:
         self.connect = np.array([[False for i in range(n)] for j in range(n)])
         self.blood = np.zeros((n,n))
         self.size = np.zeros((n,n))
+        self.reducation = np.array([[0 for i in range(n)] for j in range(n)])
         self.toconnect(0,[1],[1])
-        self.toconnect(1,[2],[1])
+        self.toconnect(1,[2],[0.4])
         self.toconnect(0,[2],[1])    
-    def toconnect(self, a, b, l = [1.0]):
+    def toconnect(self, a, b, l = [1.0],d = [0.0]):
         if(type(b) is int):
             b = np.array([b])
         n = 3
@@ -98,11 +99,15 @@ class blood_path:
         #血液輸出
         self.blood[i,:] = ( q + inblood - 0.1) * self.size[i,:] / n
         #血管幅増減
-        self.size[i,:] = np.abs(self.blood[i,:] - self.blood[:,i]) * BLOOD_FAT + ((1-BLOOD_SKINNY) * self.size[i,:])
-        self.size[:,i] = np.abs(self.blood[i,:] - self.blood[:,i]) * BLOOD_FAT + ((1-BLOOD_SKINNY) * self.size[:,i])
+        self.size[i,:] = np.abs(self.blood[i,:] - self.blood[:,i]) * BLOOD_FAT + ((1-(BLOOD_SKINNY+self.reducation[i,:])) * self.size[i,:])
+        self.size[:,i] = np.abs(self.blood[i,:] - self.blood[:,i]) * BLOOD_FAT + ((1-(BLOOD_SKINNY+self.reducation[i,:])) * self.size[:,i])
 class logicalmap:
     def __init__(self):
         self.obstacles = np.array([[0,0,0]])
+        self.x = np.linspace(0, 80, 200) #等間隔でデータを０から２０まで20個作成
+        self.y = np.linspace(0, 80, 200) #等間隔でデータを０から２０まで20個作成
+        self.x, self.y = np.meshgrid(self.x, self.y)
+        self.z = logicalmap.value(self.x,self.y)
     def obstacle_set(self,x,y,r):
         self.obstacles = np.append(self.obstacles, np.array([[x,y,r]]), axis=0) 
     def collision_judge(self,x,y):
@@ -114,7 +119,8 @@ class logicalmap:
         if(x < 0 or x > MAP_SIZE or y < 0 or y > MAP_SIZE):
             return True
         return False
-                      
+    def value(x,y):
+        return np.clip(a = np.cos((x-40)*1.5/30)-y/90,a_min=0,a_max=100)         
 class RED: 
     def __init__(self,x,y):
         self.position = np.array((x,y),dtype=float)
@@ -172,9 +178,7 @@ class RED:
         if(dis != 0):
             rad = math.atan2(vec[1], vec[0])
             self.rotate(rad)
-        self.forward()
-        
-                
+        self.forward()             
 class RED_list:
     def __init__(self,n):
         self.n = n
@@ -426,7 +430,7 @@ class RED_list:
 redlist = RED_list(RED_NUM)
 logimap = logicalmap()
 ims = []
-fig = plt.figure(figsize=(10, 10), dpi=100)
+fig = plt.figure(figsize=(6, 6), dpi=100)
 ax = fig.add_subplot(aspect='1')
 logimap.obstacle_set(50,50,5)
 logimap.obstacle_set(10,40,5)
@@ -435,9 +439,9 @@ logimap.obstacle_set(25,60,5)
 logimap.obstacle_set(0,0,5)
 logimap.obstacle_set(70,0,5)
 for i in range(logimap.obstacles.shape[0]):
-    ax.add_patch(pat.Circle(xy = (logimap.obstacles[i,0], logimap.obstacles[i,1]), radius = logimap.obstacles[i,2], fill = False, color = 'blue'))
+    ax.add_patch(pat.Circle(xy = (logimap.obstacles[i,0], logimap.obstacles[i,1]), radius = logimap.obstacles[i,2], fill = True, color = 'black'))
 #シミュレーションターン数
-for i in range(4000):
+for i in range(1000):
     #全ユニット行動
     rnd = i%1000
     if(rnd == 0):
@@ -458,7 +462,7 @@ for i in range(4000):
     elif(rnd < 1000):
         #全アンカー集合
         redlist.action(logimap,3)
-    if(i%100== 0):
+    if(i%100==0):
         xy = []
         anker_bool = []
         number_to_road = []
@@ -492,13 +496,14 @@ for i in range(4000):
                     plt.scatter(xy_anker[:,0],xy_anker[:,1],c = number_to_road, cmap="rainbow"),
                     ax.add_collection(lc),
                     plt.quiver(xy_anker[:,0], xy_anker[:,1], blood_vectol[:,0]/blood_norm*30, blood_vectol[:,1]/blood_norm*30, blood_norm, cmap='Reds', angles='xy',scale_units='xy', scale=8.0),
-                    plt.scatter(redlist.container.position[0],redlist.container.position[1],c="black", s= 200)
+                    plt.scatter(redlist.container.position[0],redlist.container.position[1],c="black", s= 200),
+                    plt.contourf(logimap.x,logimap.y,logimap.z,cmap='Blues',levels=20)
                     ])#,ax.imshow(logimap.map)])
         print(i)
 plt.xlim(0,MAP_SIZE)
 plt.ylim(0,MAP_SIZE)
-ani = animation.ArtistAnimation(fig, ims, interval=100.0)
+ani = animation.ArtistAnimation(fig, ims, interval=1000.0)
 print("saving...")
 plt.show()
-ani.save('sample.gif', writer="pillow")
+#ani.save('sample.gif', writer="pillow")
 print("done.")
