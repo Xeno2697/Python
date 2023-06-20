@@ -65,7 +65,7 @@ class blood_path:
         self.toconnect(0,[1],[1])
         self.toconnect(1,[2],[0.4])
         self.toconnect(0,[2],[1])    
-    def toconnect(self, a, b, l = [1.0],d = [0.0]):
+    def toconnect(self, a, b, l = [1.0],s = [0.0]):
         if(type(b) is int):
             b = np.array([b])
         n = 3
@@ -75,7 +75,9 @@ class blood_path:
             self.connect[a,b[i]] = True
             self.connect[b[i],a] = True
             self.size[a,b[i]] = 1.0/l[i]
-            self.size[b[i],a] = 1.0/l[i]       
+            self.size[b[i],a] = 1.0/l[i] 
+            self.reducation[a,b[i]] = s[i]
+            self.reducation[b[i],a] = s[i]
     def disconnect(self,a):
         self.connect[a,:] = np.zeros(self.n)
         self.connect[:,a] = np.zeros(self.n)
@@ -107,7 +109,7 @@ class logicalmap:
         self.x = np.linspace(0, 80, 200) #等間隔でデータを０から２０まで20個作成
         self.y = np.linspace(0, 80, 200) #等間隔でデータを０から２０まで20個作成
         self.x, self.y = np.meshgrid(self.x, self.y)
-        self.z = logicalmap.value(self.x,self.y)
+        self.z = np.clip(a = np.cos((self.x-40)*1.5/30)-self.y/90,a_min=0,a_max=100)    
     def obstacle_set(self,x,y,r):
         self.obstacles = np.append(self.obstacles, np.array([[x,y,r]]), axis=0) 
     def collision_judge(self,x,y):
@@ -120,7 +122,13 @@ class logicalmap:
             return True
         return False
     def value(x,y):
-        return np.clip(a = np.cos((x-40)*1.5/30)-y/90,a_min=0,a_max=100)         
+        z = (math.cos((x-40)*1.5/30)-(y/90))
+        if(z < 0):
+            z = 0
+        z /= 1
+        if(z > 1-BLOOD_SKINNY):
+            z = 1-BLOOD_SKINNY
+        return z       
 class RED: 
     def __init__(self,x,y):
         self.position = np.array((x,y),dtype=float)
@@ -211,7 +219,8 @@ class RED_list:
                 norm = np.linalg.norm(d,ord=2)
                 if(UWB_DISTANCE_MAX > norm):
                     self.list[j].num += 1
-                    marker_list.append(np.array([ j , d , norm], dtype=object))
+                    z = logicalmap.value((self.list[i].position[0]-self.list[j].position[0])/2,(self.list[i].position[1]-self.list[j].position[1])/2)
+                    marker_list.append(np.array([ j , d , norm, z], dtype=object))
                     if(self.list[j].anker_vectol[1] != math.nan):
                         vectol += self.list[j].anker_vectol
         if(vectol[1] == math.nan):
@@ -261,7 +270,7 @@ class RED_list:
             if( marker_list[:, 2].min() > 5.0):
                 self.list[i].anker = True
                 self.list[i].anker_inblood = -BLOOD_BLEEDING
-                self.path.toconnect(i, marker_list[:,0].tolist(),marker_list[:,2].tolist())
+                self.path.toconnect(i, marker_list[:,0].tolist(),marker_list[:,2].tolist(),marker_list[:,3].tolist())
         elif(n <= 2):
             self.list[i].direction_reversal()
     """
@@ -440,8 +449,9 @@ logimap.obstacle_set(0,0,5)
 logimap.obstacle_set(70,0,5)
 for i in range(logimap.obstacles.shape[0]):
     ax.add_patch(pat.Circle(xy = (logimap.obstacles[i,0], logimap.obstacles[i,1]), radius = logimap.obstacles[i,2], fill = True, color = 'black'))
+ax.contourf(logimap.x,logimap.y,logimap.z,cmap='Blues',levels=20)
 #シミュレーションターン数
-for i in range(1000):
+for i in range(10000):
     #全ユニット行動
     rnd = i%1000
     if(rnd == 0):
@@ -454,7 +464,7 @@ for i in range(1000):
         redlist.action(logimap,1)
     #elif(i == 250):
     #    redlist.path.reset()
-    elif(rnd < 700):
+    elif(rnd < 800):
         #コンテナ移動
         redlist.action(logimap,2)
         if(redlist.capacity_check()):
@@ -462,7 +472,7 @@ for i in range(1000):
     elif(rnd < 1000):
         #全アンカー集合
         redlist.action(logimap,3)
-    if(i%100==0):
+    if(i%300==0):
         xy = []
         anker_bool = []
         number_to_road = []
@@ -497,13 +507,12 @@ for i in range(1000):
                     ax.add_collection(lc),
                     plt.quiver(xy_anker[:,0], xy_anker[:,1], blood_vectol[:,0]/blood_norm*30, blood_vectol[:,1]/blood_norm*30, blood_norm, cmap='Reds', angles='xy',scale_units='xy', scale=8.0),
                     plt.scatter(redlist.container.position[0],redlist.container.position[1],c="black", s= 200),
-                    plt.contourf(logimap.x,logimap.y,logimap.z,cmap='Blues',levels=20)
                     ])#,ax.imshow(logimap.map)])
         print(i)
 plt.xlim(0,MAP_SIZE)
 plt.ylim(0,MAP_SIZE)
-ani = animation.ArtistAnimation(fig, ims, interval=1000.0)
+ani = animation.ArtistAnimation(fig, ims, interval=100.0)
 print("saving...")
 plt.show()
-#ani.save('sample.gif', writer="pillow")
+ani.save('sample.gif', writer="pillow")
 print("done.")
