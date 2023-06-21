@@ -23,7 +23,7 @@ class Field:
             return True
         return False
     def value(x,y):
-        z = (math.cos((x-40)*1.5/30)-(y/90))
+        z = 0#(math.cos((x-40)*1.5/30)-(y/90))
         if(z < 0):
             z = 0
         z /= 1

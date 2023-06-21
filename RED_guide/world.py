@@ -7,7 +7,6 @@ from red import Red
 from path import Path
 
 MAP_SIZE = 80
-RED_NUM = 30
 RED_POS_X = 20.0
 RED_POS_Y = 30.0
 CONTAINER_POS_X = RED_POS_X
@@ -23,10 +22,11 @@ BLOOD_CURE = 0.2
 BLOOD_SKINNY = 0.1
 BLOOD_FAT = 0.3
 class World:
-    def __init__(self,n):
+    def __init__(self,n,mapsize):
         self.n = n
-        self.container = Container()
+        self.container = Container(CONTAINER_POS_X,CONTAINER_POS_Y)
         self.path = Path(n)
+        self.field = Field(mapsize)
         self.list = [0 for _ in range(n)]
         for i in range(n):
             self.list[i] = Red(RED_POS_X,RED_POS_Y)
@@ -43,19 +43,25 @@ class World:
             self.list[i].time = 0
             self.list[i].anker_inblood = 0.0
             self.list[i].back = False
-            self.list[i].num = 0
-    #REDから見通し出来るかつ、通信可能距離に存在するアンカーのリストを取得        
-    def search(self,i):
+            self.list[i].num = 0      
+    def search(self,i):#REDから見通し出来るかつ、通信可能距離に存在するアンカー情報DictのListを取得  
         vectol = np.zeros(2)
         marker_list = []
         for j in range(self.n):
+            if(j == i):
+                continue
             if(self.list[j].anker):
-                d = self.list[j].position - self.list[i].position
-                norm = np.linalg.norm(d,ord=2)
-                if(UWB_DISTANCE_MAX > norm):
-                    self.list[j].num += 1
-                    z = Field.value((self.list[i].position[0]-self.list[j].position[0])/2,(self.list[i].position[1]-self.list[j].position[1])/2)
-                    marker_list.append(np.array([ j , d , norm, z], dtype=object))
+                vec_pos = self.list[j].position - self.list[i].position
+                distance = np.linalg.norm(vec_pos,ord=2)
+                if(UWB_DISTANCE_MAX > distance):
+                    fieldvalue = Field.value((self.list[i].position[0]-self.list[j].position[0])/2,(self.list[i].position[1]-self.list[j].position[1])/2)
+                    marker_list.append({
+                        'number' : j ,
+                        'position_vectol' : vec_pos,
+                        'distance' : distance,
+                        'field_value' : fieldvalue,
+                        'anker_vectol' : self.list[j].anker_vectol
+                        })
                     if(self.list[j].anker_vectol[1] != math.nan):
                         vectol += self.list[j].anker_vectol
         if(vectol[1] == math.nan):
@@ -64,7 +70,23 @@ class World:
             return np.zeros(2), np.zeros(2)
         elif(len(marker_list)>= 3):
             self.list[i].back = False
-        return np.array(marker_list), vectol
+        return marker_list
+    def search_direction(self,data):#周りのアンカーベクトルから、自己進行方向を決める
+        if(len(data)<3):
+            return False
+        n = 0
+        vec_sum = np.zeros(2)
+        for i in range(len(data)):
+            if(data[i]['anker_vectol'][0] is not None):
+                distance = data[i]['distance']
+                anker_vectol = data[i]['anker_vectol']
+                position_vectol = data[i]['position_vectol']
+                naiseki = np.dot(anker_vectol,position_vectol)
+                vec_sum += (anker_vectol+(position_vectol/distance*0.5))*0.1
+                n += 1
+        if(n == 0):
+            return False
+        return vec_sum/n  
     #運搬方向を返す(ノルムは不定)
     def container_search(self):
         goal = 100
@@ -96,29 +118,29 @@ class World:
                 if(norm < UWB_DISTANCE_MAX):
                     num += 1
         return (num >= NUM_TO_TRANSPORT)
-    #アンカー探索結果から、アンカーになるか判断、およびアンカー変化プロセス
-    def judge_anker(self,i):
-        marker_list, vectol = self.search(i)
-        n = marker_list.shape[0]
+    def judge_anker(self,i):#アンカー探索結果から、アンカーになるか判断、およびアンカー変化プロセス
+        marker_list =  self.search(i)
+        n = len(marker_list)
         if(n >= 3):
             self.list[i].back = False
-            if( marker_list[:, 2].min() > 5.0):
+            distance = UWB_DISTANCE_MAX
+            for j in range(n):
+                if(distance > marker_list[j]['distance']):
+                    distance = marker_list[j]['distance']
+            if( distance > 5.0):
                 self.list[i].anker = True
                 self.list[i].anker_inblood = -BLOOD_BLEEDING
-                self.path.toconnect(i, marker_list[:,0].tolist(),marker_list[:,2].tolist(),marker_list[:,3].tolist())
+                vec_sum = np.zeros(2)
+                for j in range(n):
+                    self.path.toconnect(i, [marker_list[j]['number']], [marker_list[j]['distance']], [0.0])
+                    distance = marker_list[j]['distance']
+                    anker_vectol = marker_list[j]['anker_vectol']
+                    position_vectol = marker_list[j]['position_vectol']
+                    naiseki = np.dot(anker_vectol,position_vectol)
+                    vec_sum += (anker_vectol+(-position_vectol/distance*0.5))*0.1
+                self.list[i].anker_vectol = vec_sum/np.linalg.norm(vec_sum)
         elif(n <= 2):
             self.list[i].direction_reversal()
-    """
-    def return_vectol(self,i):
-        vectol = np.zeros(2)
-        j = self.path.blood[:,i].argmax()
-        vectol = self.list[j].position - self.list[i].position
-        d = np.linalg.norm(vectol,ord=2)
-        if(d == 0):
-            return np.zeros(2)
-        vectol = vectol / d
-        return vectol
-    """
     def return_number(self,i):
         #運搬路にどの程度寄与してるか判定し、運送協力に向かうか、もしくはアンカーであるべきかどうか
         if(self.list[i].number_to_road > 0):
@@ -174,7 +196,8 @@ class World:
                 vectol += v * blood[j] / no
         return vectol     
     #毎ターンの行動
-    def action(self,logimap:Field,mode = 0):
+    def action(self,mode = 0):
+        """
         if(mode == 0):# 拡散モード
             for j in range(self.n):
                 if(self.list[j].anker):
@@ -270,4 +293,17 @@ class World:
                                         next_ank = j
                                         goal = self.list[j].number_to_goal
                             self.list[i].move_to_xy(self.list[next_ank].position[0],self.list[next_ank].position[1])
-  
+        """
+        if(mode == 4):
+            for i in range(self.n):
+                if(self.list[i].anker):
+                    #自身の番号、ベクトルを変化させる
+                    data = self.search(i)
+                    vec = self.list[i].anker_vectol
+                    self.hematopoiesis(i)
+                    self.path.blood_regulation(i,self.list[i].anker_inblood)
+                    #self.list[i].anker_vectol = self.vectol_blood(i)
+                    #最後尾にいるかつ、周りにMoverがいないとき、Moverになる。
+                else:
+                    self.list[i].move_random(self.field,self.search_direction(self.search(i)))
+                    self.judge_anker(i)

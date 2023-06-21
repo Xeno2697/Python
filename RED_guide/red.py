@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from field import logicalmap
+from field import Field
 import random
 
 RED_MOVE_Alpha = 1.0
@@ -16,9 +16,12 @@ class Red:
         self.time = 0
         #拡散用パラメータ
         self.anker_inblood = 0.0 #負にするとREDが寄ってくる、正にすると離れる
-        self.anker_vectol = np.array([0,0])
+        self.anker_vectol = np.array([1,0])
+        self.anker_number = 0
         self.move_vectol = np.array([1,0])
-        
+        #協調用パラメータ
+        self.number_of_supporters = 0 #自身の意見に同調するREDの数、大きいほど優先率が高い
+        #動作パラメータ
         self.back = False
         self.num = 0
     def change_to_mover(self):
@@ -39,7 +42,9 @@ class Red:
     def direction_reversal(self):
         self.back = True
         self.move_vectol *= -1
-    def move_random(self,logimap:logicalmap, vectol = np.zeros(2), alpha = RED_MOVE_Alpha):
+    def move_random(self,logimap:Field, vectol = np.zeros(2), alpha = RED_MOVE_Alpha):
+            if(vectol is False):
+                self.direction_reversal()
             if(random.random() < 0.4 and not self.back):
                 dis = np.linalg.norm(vectol,ord=2)
                 angle = 0.0
