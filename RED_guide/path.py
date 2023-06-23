@@ -1,11 +1,10 @@
 import numpy as np
-RED_NUM = 30
 BLOOD_BLEEDING = 50 #新規領域開拓時の引き寄せ力
 BLOOD_CURE = 0.2
 BLOOD_SKINNY = 0.1
 BLOOD_FAT = 0.3
 class Path:
-    def __init__(self,n = RED_NUM):
+    def __init__(self,n = 30):
         self.n = n
         self.connect = np.array([[False for i in range(n)] for j in range(n)])
         self.blood = np.zeros((n,n))

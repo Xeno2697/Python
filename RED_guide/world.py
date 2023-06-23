@@ -82,7 +82,7 @@ class World:
                 anker_vectol = data[i]['anker_vectol']
                 position_vectol = data[i]['position_vectol']
                 naiseki = np.dot(anker_vectol,position_vectol)
-                vec_sum += (anker_vectol+(position_vectol/distance*0.5))*0.1
+                vec_sum += (anker_vectol+(position_vectol/distance*0.2))*0.1
                 n += 1
         if(n == 0):
             return False
@@ -196,7 +196,7 @@ class World:
                 vectol += v * blood[j] / no
         return vectol     
     #毎ターンの行動
-    def action(self,mode = 0):
+    def action(self,mode = 0,f = 0):
         """
         if(mode == 0):# 拡散モード
             for j in range(self.n):
@@ -296,14 +296,16 @@ class World:
         """
         if(mode == 4):
             for i in range(self.n):
+                if(np.isnan(self.list[i].position[0])):
+                    print("Error: position is NaN.")
                 if(self.list[i].anker):
                     #自身の番号、ベクトルを変化させる
                     data = self.search(i)
-                    vec = self.list[i].anker_vectol
+                    self.list[i].action_anker(self.path, data)
                     self.hematopoiesis(i)
                     self.path.blood_regulation(i,self.list[i].anker_inblood)
                     #self.list[i].anker_vectol = self.vectol_blood(i)
                     #最後尾にいるかつ、周りにMoverがいないとき、Moverになる。
                 else:
-                    self.list[i].move_random(self.field,self.search_direction(self.search(i)))
+                    self.list[i].action_mover(self.field, self.search(i))
                     self.judge_anker(i)

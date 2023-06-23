@@ -7,8 +7,7 @@ from field import Field
 from world import World
 
 MAP_SIZE = 80
-RED_NUM = 60
-
+RED_NUM = 30
 #メモ
 #
 #道の運搬適切度＝血の流れやすさ＝Pathの「太さ」
@@ -33,7 +32,7 @@ for i in range(redlist.field.obstacles.shape[0]):
 #ax.contourf(redlist.field.x,redlist.field.y,redlist.field.z,cmap='Blues',levels=20)
 #シミュレーションターン数
 for i in range(200):
-    redlist.action(4)
+    redlist.action(4,i)
     if(i%3==0):
         xy = []
         anker_bool = []
@@ -71,7 +70,7 @@ for i in range(200):
         blood_norm += 0.001
         ims.append([
                     plt.scatter(xy[:,0],xy[:,1],c="red"),
-                    plt.scatter(xy_anker[:,0],xy_anker[:,1],c = number_to_road, cmap="rainbow"),
+                    #plt.scatter(xy_anker[:,0],xy_anker[:,1],c = number_to_road, cmap="rainbow"),
                     ax.add_collection(lc),
                     plt.quiver(xy_anker[:,0], xy_anker[:,1], blood_vectol[:,0]/blood_norm*30, blood_vectol[:,1]/blood_norm*30, blood_norm, color='red', angles='xy',scale_units='xy', scale=8.0),
                     #plt.scatter(redlist.container.position[0],redlist.container.position[1],c="black", s= 200),
