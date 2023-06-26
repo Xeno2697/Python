@@ -27,13 +27,20 @@ class World:
         self.container = Container(CONTAINER_POS_X,CONTAINER_POS_Y)
         self.path = Path(n)
         self.field = Field(mapsize)
+        self.field.set_wall(40,0,40,60)
+        
         self.list = [0 for _ in range(n)]
         for i in range(n):
-            self.list[i] = Red(RED_POS_X,RED_POS_Y)
+            self.list[i] = Red(RED_POS_X-1,RED_POS_Y-1)
         for i in [0,1,2]:
-            self.list[i].anker = True
-        self.list[1].anker_inblood = -BLOOD_BLEEDING
+            self.list[i].mode = 1
+        self.list[1].number_to_container = 1
+        self.list[2].number_to_container = 1
+        self.list[0].position[0] = RED_POS_X
+        self.list[0].position[1] = RED_POS_Y
         self.list[1].position[0] = RED_POS_X+5
+        self.list[1].position[1] = RED_POS_Y
+        self.list[2].position[0] = RED_POS_X
         self.list[2].position[1] = RED_POS_Y+5
     def restart(self):
         for i in range(self.n):
@@ -50,17 +57,20 @@ class World:
         for j in range(self.n):
             if(j == i):
                 continue
-            if(self.list[j].anker):
+            if(self.list[j].mode == 1):
                 vec_pos = self.list[j].position - self.list[i].position
                 distance = np.linalg.norm(vec_pos,ord=2)
                 if(UWB_DISTANCE_MAX > distance):
                     fieldvalue = Field.value((self.list[i].position[0]-self.list[j].position[0])/2,(self.list[i].position[1]-self.list[j].position[1])/2)
+                    blood = (self.path.blood[i][j]-self.path.blood[j][i])/2
                     marker_list.append({
                         'number' : j ,
                         'position_vectol' : vec_pos,
                         'distance' : distance,
                         'field_value' : fieldvalue,
-                        'anker_vectol' : self.list[j].anker_vectol
+                        'anker_vectol' : self.list[j].anker_vectol,
+                        'blood' : blood,
+                        'number_to_container' : self.list[j].number_to_container
                         })
                     if(self.list[j].anker_vectol[1] != math.nan):
                         vectol += self.list[j].anker_vectol
@@ -87,13 +97,12 @@ class World:
         if(n == 0):
             return False
         return vec_sum/n  
-    #運搬方向を返す(ノルムは不定)
-    def container_search(self):
+    def container_search(self):#運搬方向を返す(ノルムは不定)
         goal = 100
         road = 10
         vec = np.zeros(2)
         for j in range(self.n):
-            if(self.list[j].anker):
+            if(self.list[j].mode == 1):
                 d = self.list[j].position - self.container.position
                 norm = np.linalg.norm(d,ord=2)
                 if(norm < UWB_DISTANCE_MAX and goal > self.list[j].number_to_goal):
@@ -108,11 +117,10 @@ class World:
             return vec
         else:
             return False
-    #運搬できる台数が存在するか
-    def capacity_check(self):
+    def capacity_check(self):#運搬できる台数が存在するか
         num = 0
         for j in range(self.n):
-            if(not self.list[j].anker):
+            if(not self.list[j].mode == 1):
                 d = self.list[j].position - self.container.position
                 norm = np.linalg.norm(d,ord=2)
                 if(norm < UWB_DISTANCE_MAX):
@@ -128,17 +136,19 @@ class World:
                 if(distance > marker_list[j]['distance']):
                     distance = marker_list[j]['distance']
             if( distance > 5.0):
-                self.list[i].anker = True
+                self.list[i].mode = 1
                 self.list[i].anker_inblood = -BLOOD_BLEEDING
                 vec_sum = np.zeros(2)
                 for j in range(n):
                     self.path.toconnect(i, [marker_list[j]['number']], [marker_list[j]['distance']], [0.0])
+                    '''
                     distance = marker_list[j]['distance']
                     anker_vectol = marker_list[j]['anker_vectol']
                     position_vectol = marker_list[j]['position_vectol']
                     naiseki = np.dot(anker_vectol,position_vectol)
                     vec_sum += (anker_vectol+(-position_vectol/distance*0.5))*0.1
                 self.list[i].anker_vectol = vec_sum/np.linalg.norm(vec_sum)
+                '''
         elif(n <= 2):
             self.list[i].direction_reversal()
     def return_number(self,i):
@@ -180,13 +190,24 @@ class World:
                 self.list[i].number_to_road = 1
             else:
                 self.list[i].number_to_road = -1       
-    #コンテナ付近では、出血に応じた量の造血を行い、貧血を治すと同時に、コンテナ中心とした流れを生み出す。
-    def hematopoiesis(self,i):
-        d = np.linalg.norm(self.list[i].position - self.container.position)
-        if(d < 5.0):
-            self.list[i].anker_inblood = -np.sum(self.path.blood[:,i]) * 0.4
-    ##血流ベクトル計算  
-    def vectol_blood(self,i):
+    def hematopoiesis(self,i): #コンテナ付近では、出血に応じた量の造血を行い、貧血を治すと同時に、コンテナ中心とした流れを生み出す。
+        #d = np.linalg.norm(self.list[i].position - self.container.position)
+        #if(d < 5.0):
+        if(self.list[i].number_to_container == 0):
+            self.list[i].anker_inblood = -np.sum(self.path.blood[:,i]) * 0.4  
+    def virtual_container_control(self,i):
+        if(self.list[i].number_to_container == 0):
+            search_data = self.search(i)
+            t = np.zeros(2)
+            f = np.zeros(2)
+            for i in range(len(search_data)):
+                if(self.number_to_container > search_data[i]['number_to_container']+1):
+                    self.number_to_container = search_data[i]['number_to_container']+1
+                if(search_data[i]['anker_vectol'][0] is not None):
+                    blood = search_data[i]['blood']
+                    if(blood > 0):
+                        t += blood * search_data[i]['position_vectol']/search_data[i]['distance']
+    def vectol_blood(self,i):#血流ベクトル計算 
         blood = self.path.blood[i, :] - self.path.blood[:, i]
         vectol = np.zeros(2)
         for j in range(self.n):
@@ -195,8 +216,7 @@ class World:
             if(no != 0.0):
                 vectol += v * blood[j] / no
         return vectol     
-    #毎ターンの行動
-    def action(self,mode = 0,f = 0):
+    def action(self,mode = 0):#毎ターンの行動
         """
         if(mode == 0):# 拡散モード
             for j in range(self.n):
@@ -298,14 +318,22 @@ class World:
             for i in range(self.n):
                 if(np.isnan(self.list[i].position[0])):
                     print("Error: position is NaN.")
-                if(self.list[i].anker):
+                if(self.list[i].mode == 1):
                     #自身の番号、ベクトルを変化させる
                     data = self.search(i)
-                    self.list[i].action_anker(self.path, data)
-                    self.hematopoiesis(i)
-                    self.path.blood_regulation(i,self.list[i].anker_inblood)
+                    next_mode = self.list[i].action_anker(self.path, data)
+                    if(next_mode == 2):
+                        self.path.disconnect(i)
+                    else:
+                        self.hematopoiesis(i)
+                        self.path.blood_regulation(i,self.list[i].anker_inblood)
                     #self.list[i].anker_vectol = self.vectol_blood(i)
                     #最後尾にいるかつ、周りにMoverがいないとき、Moverになる。
-                else:
-                    self.list[i].action_mover(self.field, self.search(i))
-                    self.judge_anker(i)
+                elif(self.list[i].mode == 0):
+                    data = self.search(i)
+                    next_mode = self.list[i].action_mover(self.field, data)
+                    if(next_mode == 1):
+                        for j in range(len(data)):
+                            self.path.toconnect(i, [data[j]['number']], [data[j]['distance']], [0.0])
+                elif(self.list[i].mode == 2):
+                    next_mode = self.list[i].action_returnee(self.field, self.search(i))

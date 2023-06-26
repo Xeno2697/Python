@@ -27,20 +27,23 @@ redlist = World(RED_NUM,MAP_SIZE)
 ims = []
 fig = plt.figure(figsize=(6, 6), dpi=120)
 ax = fig.add_subplot(aspect='1')
-for i in range(redlist.field.obstacles.shape[0]):
-    ax.add_patch(pat.Circle(xy = (redlist.field.obstacles[i,0], redlist.field.obstacles[i,1]), radius = redlist.field.obstacles[i,2], fill = True, color = 'black'))
+lines = [[(redlist.field.walls[i,0], redlist.field.walls[i,1]), (redlist.field.walls[i,2], redlist.field.walls[i,3])] for i in range(redlist.field.walls.shape[0])]
+lc = collections.LineCollection(lines, linewidths=2)
+ax.add_collection(lc)
+#for i in range(redlist.field.obstacles.shape[0]):
+#    ax.add_patch(pat.Circle(xy = (redlist.field.obstacles[i,0], redlist.field.obstacles[i,1]), radius = redlist.field.obstacles[i,2], fill = True, color = 'black'))
 #ax.contourf(redlist.field.x,redlist.field.y,redlist.field.z,cmap='Blues',levels=20)
 #シミュレーションターン数
-for i in range(200):
-    redlist.action(4,i)
-    if(i%3==0):
+for i in range(1000):
+    redlist.action(4)
+    if(i%5==0):
         xy = []
         anker_bool = []
         number_to_road = []
         blood_vectol = []
         for j in range(redlist.n):
             xy.append(redlist.list[j].position)
-            anker_bool.append(redlist.list[j].anker)
+            anker_bool.append(redlist.list[j].mode == 1)
             number_to_road.append(redlist.list[j].number_to_road)
             blood_vectol.append(redlist.list[j].anker_vectol)
         xy = np.array(xy)
