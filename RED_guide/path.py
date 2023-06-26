@@ -47,6 +47,8 @@ class Path:
         #流入量/パス数　＝パス流出量
         n = self.size[i,:].sum()
         #血液輸出
+        if(n == 0):
+            n = 0.000001
         self.blood[i,:] = ( q + inblood - 0.1) * self.size[i,:] / n
         #血管幅増減
         self.size[i,:] = np.abs(self.blood[i,:] - self.blood[:,i]) * BLOOD_FAT + ((1-(BLOOD_SKINNY+self.reducation[i,:])) * self.size[i,:])

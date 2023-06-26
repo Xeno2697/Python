@@ -7,6 +7,10 @@ class Field:
     def __init__(self,mapsize = 80):
         self.obstacles = np.array([[0,0,0]])
         self.walls = np.array([[0,0,0,0]])
+        self.set_wall(0,0,mapsize,0)
+        self.set_wall(0,0,0,mapsize)
+        self.set_wall(0,mapsize,mapsize,mapsize)
+        self.set_wall(mapsize,0,mapsize,mapsize)
         self.mapsize = mapsize
         self.x = np.linspace(0, mapsize, 200) #等間隔でデータを０から２０まで20個作成
         self.y = np.linspace(0, mapsize, 200) #等間隔でデータを０から２０まで20個作成
@@ -18,11 +22,12 @@ class Field:
     def set_wall(self,x1,y1,x2,y2):
         self.walls = np.append(self.walls, np.array([[x1,y1,x2,y2]]), axis=0)
     def judge_walls(self, x1, y1, x2, y2):
+        """壁に抵触する場合True"""
         tc1 = (x1 - x2) * (self.walls[:,1] - y1) + (y1 - y2) * (x1 - self.walls[:,0])
         tc2 = (x1 - x2) * (self.walls[:,3] - y1) + (y1 - y2) * (x1 - self.walls[:,2])
         td1 = (self.walls[:,0] - self.walls[:,2]) * (y1 - self.walls[:,1]) + (self.walls[:,1] - self.walls[:,3]) * (self.walls[:,0] - x1)
         td2 = (self.walls[:,0] - self.walls[:,2]) * (y2 - self.walls[:,1]) + (self.walls[:,1] - self.walls[:,3]) * (self.walls[:,0] - x2)
-        return np.max((tc1*tc2)<0) and np.max((td1*td2)<0)
+        return np.max(((tc1*tc2)<0)*((td1*td2)<0))
     
     def collision_judge(self,x,y):
         for i in self.obstacles:

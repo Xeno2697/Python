@@ -34,24 +34,26 @@ ax.add_collection(lc)
 #    ax.add_patch(pat.Circle(xy = (redlist.field.obstacles[i,0], redlist.field.obstacles[i,1]), radius = redlist.field.obstacles[i,2], fill = True, color = 'black'))
 #ax.contourf(redlist.field.x,redlist.field.y,redlist.field.z,cmap='Blues',levels=20)
 #シミュレーションターン数
-for i in range(1000):
+for i in range(5000):
     redlist.action(4)
-    if(i%5==0):
+    if(i%400 == 390):
+        redlist.virtual_container_control()
+    if(i%50==0):
         xy = []
         anker_bool = []
-        number_to_road = []
+        number_to_container = []
         blood_vectol = []
         for j in range(redlist.n):
             xy.append(redlist.list[j].position)
             anker_bool.append(redlist.list[j].mode == 1)
-            number_to_road.append(redlist.list[j].number_to_road)
+            number_to_container.append(redlist.list[j].number_to_container)
             blood_vectol.append(redlist.list[j].anker_vectol)
         xy = np.array(xy)
         blood_vectol=np.array(blood_vectol)
-        number_to_road = np.array(number_to_road)
+        number_to_container = np.array(number_to_container)
         xy_anker = xy[anker_bool]
         blood_vectol = blood_vectol[anker_bool] 
-        number_to_road = number_to_road[anker_bool]
+        number_to_container = number_to_container[anker_bool]
         xy = xy[np.logical_not(anker_bool)]
         line = []
         width = []
@@ -73,7 +75,7 @@ for i in range(1000):
         blood_norm += 0.001
         ims.append([
                     plt.scatter(xy[:,0],xy[:,1],c="red"),
-                    #plt.scatter(xy_anker[:,0],xy_anker[:,1],c = number_to_road, cmap="rainbow"),
+                    plt.scatter(xy_anker[:,0],xy_anker[:,1],c = number_to_container, cmap="rainbow"),
                     ax.add_collection(lc),
                     plt.quiver(xy_anker[:,0], xy_anker[:,1], blood_vectol[:,0]/blood_norm*30, blood_vectol[:,1]/blood_norm*30, blood_norm, color='red', angles='xy',scale_units='xy', scale=8.0),
                     #plt.scatter(redlist.container.position[0],redlist.container.position[1],c="black", s= 200),
@@ -84,5 +86,5 @@ plt.ylim(0,MAP_SIZE)
 ani = animation.ArtistAnimation(fig, ims, interval=100.0)
 print("saving...")
 plt.show()
-#ani.save('sample.gif', writer="pillow")
+ani.save('sample.gif', writer="pillow")
 print("done.")

@@ -26,8 +26,14 @@ class World:
         self.n = n
         self.container = Container(CONTAINER_POS_X,CONTAINER_POS_Y)
         self.path = Path(n)
+        
         self.field = Field(mapsize)
-        self.field.set_wall(40,0,40,60)
+        self.field.set_wall(20,60,20,40)
+        self.field.set_wall(20,60,40,60)
+        self.field.set_wall(40,60,20,40)
+        self.field.set_wall(40,20,60,20)
+        self.field.set_wall(40,20,60,40)
+        self.field.set_wall(60,20,60,40)
         
         self.list = [0 for _ in range(n)]
         for i in range(n):
@@ -60,7 +66,7 @@ class World:
             if(self.list[j].mode == 1):
                 vec_pos = self.list[j].position - self.list[i].position
                 distance = np.linalg.norm(vec_pos,ord=2)
-                if(UWB_DISTANCE_MAX > distance):
+                if(UWB_DISTANCE_MAX > distance):#and not self.field.judge_walls(self.list[j].position[0],self.list[j].position[1],self.list[i].position[0],self.list[i].position[1])):
                     fieldvalue = Field.value((self.list[i].position[0]-self.list[j].position[0])/2,(self.list[i].position[1]-self.list[j].position[1])/2)
                     blood = (self.path.blood[i][j]-self.path.blood[j][i])/2
                     marker_list.append({
@@ -195,18 +201,35 @@ class World:
         #if(d < 5.0):
         if(self.list[i].number_to_container == 0):
             self.list[i].anker_inblood = -np.sum(self.path.blood[:,i]) * 0.4  
-    def virtual_container_control(self,i):
+    def virtual_container_control(self):
+        i = 0
+        for k in range(self.n):
+            if(self.list[k].number_to_container == 0 and self.list[k].mode == 1):
+                i = k
+                break
+        to = None
         if(self.list[i].number_to_container == 0):
             search_data = self.search(i)
-            t = np.zeros(2)
-            f = np.zeros(2)
-            for i in range(len(search_data)):
-                if(self.number_to_container > search_data[i]['number_to_container']+1):
-                    self.number_to_container = search_data[i]['number_to_container']+1
-                if(search_data[i]['anker_vectol'][0] is not None):
-                    blood = search_data[i]['blood']
-                    if(blood > 0):
-                        t += blood * search_data[i]['position_vectol']/search_data[i]['distance']
+            t = np.array((0.0001,0))
+            for j in range(len(search_data)):
+                if(search_data[j]['anker_vectol'][0] is not None):
+                    t += search_data[j]['blood'] * search_data[j]['position_vectol']/search_data[j]['distance']
+            t /= np.linalg.norm(t)
+            ans = -1
+            for j in range(len(search_data)):
+                if(search_data[j]['anker_vectol'][0] is not None):
+                    naiseki = np.dot(t,search_data[j]['position_vectol']/search_data[j]['distance'])
+                    if(ans < naiseki):
+                        ans = naiseki
+                        to = search_data[j]['number']
+        if(to is not None):
+            self.list[to].number_to_container = 0
+            self.list[i].number_to_container = 99
+            self.list[i].anker_inblood = 0.0
+            self.path.size[i,to] = 0.0000001
+            self.path.size[to,i] = 0.0000001
+            self.path.blood[i,to] = 0.0
+            self.path.blood[to,i] = 0.0
     def vectol_blood(self,i):#血流ベクトル計算 
         blood = self.path.blood[i, :] - self.path.blood[:, i]
         vectol = np.zeros(2)

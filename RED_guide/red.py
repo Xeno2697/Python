@@ -139,6 +139,7 @@ class Red:
         #自身のサポーターの数と、血液ベクトル
         t = np.zeros(2)
         f = np.zeros(2)
+        self.number_to_container ==99
         for i in range(len(search_data)):
             if(self.number_to_container > search_data[i]['number_to_container']+1):
                 self.number_to_container = search_data[i]['number_to_container']+1
@@ -150,9 +151,9 @@ class Red:
                     f += blood * search_data[i]['position_vectol']/search_data[i]['distance']
         self.anker_vectol = (t+f)/4
         norm = np.linalg.norm(t)
-        if(norm < 0.001 and self.number_to_container >1):
+        if(norm <= 0.0 and self.number_to_container > 0):
             self.time+=1
-            if(self.time > 60):#撤退条件
+            if(self.time > 40):#撤退条件
                 self.mode = 2
                 self.time = 0
                 return 2
