@@ -12,15 +12,27 @@ RED_POS_Y = 30.0
 CONTAINER_POS_X = RED_POS_X
 CONTAINER_POS_Y = RED_POS_Y
 CONTAINER_CAPABLE_DISTANCE = 1.0
-NUM_TO_TRANSPORT = 1 #押し出すのに何台要るか
+NUM_TO_TRANSPORT = 1
 RED_MOVE_Alpha = 1.0
 UWB_DISTANCE_MAX = 10.0
+UWB_DISTANCE_MAX_inverse = 1.0/UWB_DISTANCE_MAX
 UWB_DISTANCE_MIN = 0.5
 
-BLOOD_BLEEDING = 50 #新規領域開拓時の引き寄せ力
+BLOOD_BLEEDING = 50
 BLOOD_CURE = 0.2
 BLOOD_SKINNY = 0.1
 BLOOD_FAT = 0.3
+def numpy_isqrt(number):
+    threehalfs = 1.5
+    x2 = number * 0.5
+    y = np.float32(number)
+    
+    i = y.view(np.int32)
+    i = np.int32(0x5f3759df) - np.int32(i >> 1)
+    y = i.view(np.float32)
+    
+    y = y * (threehalfs - (x2 * y * y))
+    return float(y)
 class World:
     def __init__(self,n,mapsize):
         self.n = n
@@ -40,8 +52,10 @@ class World:
             self.list[i] = Red(RED_POS_X-1,RED_POS_Y-1)
         for i in [0,1,2]:
             self.list[i].mode = 1
-        self.list[1].number_to_container = 1
-        self.list[2].number_to_container = 1
+        self.list[0].number_to_container = 0
+        self.cont_path = np.array([self.list[0].position])
+        self.list[1].number_to_container = 99
+        self.list[2].number_to_container = 99
         self.list[0].position[0] = RED_POS_X
         self.list[0].position[1] = RED_POS_Y
         self.list[1].position[0] = RED_POS_X+5
@@ -57,27 +71,30 @@ class World:
             self.list[i].anker_inblood = 0.0
             self.list[i].back = False
             self.list[i].num = 0      
-    def search(self,i):#REDから見通し出来るかつ、通信可能距離に存在するアンカー情報DictのListを取得  
+    def search(self,i):
         vectol = np.zeros(2)
+        anker_bool = self.list[i].mode == 1
         marker_list = []
         for j in range(self.n):
             if(j == i):
                 continue
             if(self.list[j].mode == 1):
                 vec_pos = self.list[j].position - self.list[i].position
-                distance = np.linalg.norm(vec_pos,ord=2)
-                if(UWB_DISTANCE_MAX > distance):#and not self.field.judge_walls(self.list[j].position[0],self.list[j].position[1],self.list[i].position[0],self.list[i].position[1])):
+                distanceinv = numpy_isqrt(vec_pos[0]**2+vec_pos[1]**2)
+                if(distanceinv > UWB_DISTANCE_MAX_inverse):#and not self.field.judge_walls(self.list[j].position[0],self.list[j].position[1],self.list[i].position[0],self.list[i].position[1])):
                     fieldvalue = Field.value((self.list[i].position[0]-self.list[j].position[0])/2,(self.list[i].position[1]-self.list[j].position[1])/2)
                     blood = (self.path.blood[i][j]-self.path.blood[j][i])/2
                     marker_list.append({
                         'number' : j ,
                         'position_vectol' : vec_pos,
-                        'distance' : distance,
+                        'distance' : 1/distanceinv,
                         'field_value' : fieldvalue,
                         'anker_vectol' : self.list[j].anker_vectol,
                         'blood' : blood,
                         'number_to_container' : self.list[j].number_to_container
                         })
+                    if(not anker_bool):
+                        self.list[j].num += 1
                     if(self.list[j].anker_vectol[1] != math.nan):
                         vectol += self.list[j].anker_vectol
         if(vectol[1] == math.nan):
@@ -87,7 +104,7 @@ class World:
         elif(len(marker_list)>= 3):
             self.list[i].back = False
         return marker_list
-    def search_direction(self,data):#周りのアンカーベクトルから、自己進行方向を決める
+    def search_direction(self,data):
         if(len(data)<3):
             return False
         n = 0
@@ -103,7 +120,7 @@ class World:
         if(n == 0):
             return False
         return vec_sum/n  
-    def container_search(self):#運搬方向を返す(ノルムは不定)
+    def container_search(self):
         goal = 100
         road = 10
         vec = np.zeros(2)
@@ -123,7 +140,7 @@ class World:
             return vec
         else:
             return False
-    def capacity_check(self):#運搬できる台数が存在するか
+    def capacity_check(self):
         num = 0
         for j in range(self.n):
             if(not self.list[j].mode == 1):
@@ -132,7 +149,7 @@ class World:
                 if(norm < UWB_DISTANCE_MAX):
                     num += 1
         return (num >= NUM_TO_TRANSPORT)
-    def judge_anker(self,i):#アンカー探索結果から、アンカーになるか判断、およびアンカー変化プロセス
+    def judge_anker(self,i):
         marker_list =  self.search(i)
         n = len(marker_list)
         if(n >= 3):
@@ -158,30 +175,24 @@ class World:
         elif(n <= 2):
             self.list[i].direction_reversal()
     def return_number(self,i):
-        #運搬路にどの程度寄与してるか判定し、運送協力に向かうか、もしくはアンカーであるべきかどうか
         if(self.list[i].number_to_road > 0):
             if(self.list[i].number_to_road == 1):
                 for j in range(self.n):
                     if(self.path.connect[i,j] == True):
                         if(self.list[j].number_to_road != 1):
-                            #ルート近くのアンカーを2にする
                             self.list[j].number_to_road = 2
                 f = self.path.size[i,:] * (((self.path.blood[i, :] - self.path.blood[:, i])>0.0))
                 next_anker =  f.argmax()
                 if(f[next_anker] > 0.0):
-                    #次のルートアンカーを1にする
+                    
                     self.list[next_anker].number_to_road = 1
                 else:
-                    #自身は運搬路の終点である
-                    #ゴールからの経由アンカー数を設定
                     self.list[i].number_to_goal = 1
             else:
                 for j in range(self.n):
                     if(self.path.connect[i,j] == True):
                         if((self.list[j].number_to_road <= 0) or (self.list[j].number_to_road > self.list[i].number_to_road + 1 )):
-                            #近くのアンカーより一つ上の値にセット
                             self.list[j].number_to_road = self.list[i].number_to_road + 1
-        #コンテナまでの経由ノード数を取得
         if(self.list[i].number_to_goal >= 1):
             for j in range(self.n):
                 if(self.path.connect[i,j] == True):
@@ -192,11 +203,10 @@ class World:
             vec = self.container.position - self.list[i].position
             nor = np.linalg.norm(vec,ord=2)
             if(nor < 2.5):
-                #コンテナ近くのアンカーを1にする
                 self.list[i].number_to_road = 1
             else:
                 self.list[i].number_to_road = -1       
-    def hematopoiesis(self,i): #コンテナ付近では、出血に応じた量の造血を行い、貧血を治すと同時に、コンテナ中心とした流れを生み出す。
+    def hematopoiesis(self,i):
         #d = np.linalg.norm(self.list[i].position - self.container.position)
         #if(d < 5.0):
         if(self.list[i].number_to_container == 0):
@@ -224,6 +234,7 @@ class World:
                         to = search_data[j]['number']
         if(to is not None):
             self.list[to].number_to_container = 0
+            self.cont_path = np.append(self.cont_path,np.array([self.list[to].position]),axis=0)
             self.list[i].number_to_container = 99
             self.list[i].anker_inblood = 0.0
             self.path.size[i,to] = 0.0000001
@@ -239,12 +250,11 @@ class World:
             if(no != 0.0):
                 vectol += v * blood[j] / no
         return vectol     
-    def action(self,mode = 0):#毎ターンの行動
+    def action(self,mode = 0):
         """
-        if(mode == 0):# 拡散モード
+        if(mode == 0):
             for j in range(self.n):
                 if(self.list[j].anker):
-                    #距離照会数だけ、出血量の低下
                     if(self.list[j].anker_inblood < 0):
                         self.list[j].anker_inblood += self.list[j].num * 0.1 #+ BLOOD_CURE
                     self.list[j].num = 0
@@ -253,7 +263,6 @@ class World:
                     self.list[j].anker_vectol = self.vectol_blood(j)
                     #self.judge_patroler(j)
                 else:
-                    #アンカー探索と、血流ベクトル取得、移動、アンカー変化判定
                     anker_list,vectol = self.search(j)
                     self.list[j].move_random(logimap,vectol)
                     self.judge_anker(j)
@@ -339,8 +348,8 @@ class World:
         """
         if(mode == 4):
             for i in range(self.n):
-                if(np.isnan(self.list[i].position[0])):
-                    print("Error: position is NaN.")
+                #if(np.isnan(self.list[i].position[0])):
+                #    print("Error: position is NaN.")
                 if(self.list[i].mode == 1):
                     #自身の番号、ベクトルを変化させる
                     data = self.search(i)

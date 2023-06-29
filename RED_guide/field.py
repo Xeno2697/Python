@@ -22,7 +22,7 @@ class Field:
     def set_wall(self,x1,y1,x2,y2):
         self.walls = np.append(self.walls, np.array([[x1,y1,x2,y2]]), axis=0)
     def judge_walls(self, x1, y1, x2, y2):
-        """壁に抵触する場合True"""
+        """True"""
         tc1 = (x1 - x2) * (self.walls[:,1] - y1) + (y1 - y2) * (x1 - self.walls[:,0])
         tc2 = (x1 - x2) * (self.walls[:,3] - y1) + (y1 - y2) * (x1 - self.walls[:,2])
         td1 = (self.walls[:,0] - self.walls[:,2]) * (y1 - self.walls[:,1]) + (self.walls[:,1] - self.walls[:,3]) * (self.walls[:,0] - x1)

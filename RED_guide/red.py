@@ -14,7 +14,7 @@ class Red:
         #収束用パラメータ
         self.number_to_goal = 0
         self.number_to_road = 0
-        self.number_to_container = 0
+        self.number_to_container = 99
         self.time = 0 #意見を持ち続けた時間
         
         #拡散用パラメータ
@@ -39,7 +39,7 @@ class Red:
         self.num = 0
         self.number_to_goal = 0
         self.number_to_road = 0
-        self.number_to_container = 0
+        self.number_to_container = -1
         self.direction_reversal()
         self.forward()
     def forward(self,power = 1.0):
@@ -104,7 +104,8 @@ class Red:
                 n += 1
         if(n == 0):
             #アンカーが一つもない
-            return False
+            self.mode = 2
+            return 2
         if(n < 3):
             #アンカーが十分数存在しないので、とりあえずバック。
             vec_sum = np.zeros(2)
@@ -126,8 +127,8 @@ class Red:
                 self.rotate(angle)
             
         next_pos = self.position + self.move_vectol
-        if(next_pos[0] == np.nan):
-            print("Error: position is NaN.")
+        #if(next_pos[0] == np.nan):
+        #    print("Error: position is NaN.")
         if(not field.judge_walls(self.position[0],self.position[1],next_pos[0],next_pos[1])):
                 self.forward()
         else:
@@ -139,26 +140,28 @@ class Red:
         #自身のサポーターの数と、血液ベクトル
         t = np.zeros(2)
         f = np.zeros(2)
-        self.number_to_container ==99
-        for i in range(len(search_data)):
-            if(self.number_to_container > search_data[i]['number_to_container']+1):
-                self.number_to_container = search_data[i]['number_to_container']+1
-            if(search_data[i]['anker_vectol'][0] is not None):
-                blood = search_data[i]['blood']
-                if(blood > 0):
-                    t += blood * search_data[i]['position_vectol']/search_data[i]['distance']
-                elif(blood < 0):
-                    f += blood * search_data[i]['position_vectol']/search_data[i]['distance']
-        self.anker_vectol = (t+f)/4
-        norm = np.linalg.norm(t)
-        if(norm <= 0.0 and self.number_to_container > 0):
-            self.time+=1
-            if(self.time > 40):#撤退条件
-                self.mode = 2
+        if(self.number_to_container != 0):
+            self.number_to_container = 99
+            for i in range(len(search_data)):
+                if(self.number_to_container > search_data[i]['number_to_container']+1):
+                    self.number_to_container = search_data[i]['number_to_container']+1
+                if(search_data[i]['anker_vectol'][0] is not None):
+                    blood = search_data[i]['blood']
+                    if(blood > 0):
+                        t += blood * search_data[i]['position_vectol']/search_data[i]['distance']
+                    elif(blood < 0):
+                        f += blood * search_data[i]['position_vectol']/search_data[i]['distance']
+            self.anker_vectol = (t+f)/4
+            norm = np.linalg.norm(t)
+            if(norm <= 0.0 and self.num == 0):
+                self.time+=1
+                if(self.time > 20 + self.number_to_container * 20):#撤退条件
+                    self.mode = 2
+                    self.time = 0
+                    return 2
+            else:
                 self.time = 0
-                return 2
-        else:
-            self.time = 0
+        self.num = 0
         
         #自身の意見の信用度
         #自身を必要とする存在の有無
@@ -179,7 +182,7 @@ class Red:
                 position_vectol = search_data[i]['position_vectol']
                 vectol = position_vectol*distance
         if(min_num == 0):
-            if(np.linalg.norm(vectol) < 5.0):
+            if(np.linalg.norm(vectol) < 1.0):
                 self.mode = 0
                 return 0
         #標準偏差を利用したランダム方向移動
@@ -193,8 +196,8 @@ class Red:
                     angle = random.gauss(rad, math.pi/2*alpha)
                 self.rotate(angle)
         next_pos = self.position + self.move_vectol
-        if(next_pos[0] == np.nan):
-            print("Error: position is NaN.")
+        #if(next_pos[0] == np.nan):
+        #    print("Error: position is NaN.")
         if(not field.judge_walls(self.position[0],self.position[1],next_pos[0],next_pos[1])):
                 self.forward()
         else:

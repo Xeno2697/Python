@@ -5,6 +5,7 @@ import matplotlib.patches as pat
 import numpy as np
 from field import Field
 from world import World
+import tqdm
 
 MAP_SIZE = 80
 RED_NUM = 30
@@ -34,11 +35,12 @@ ax.add_collection(lc)
 #    ax.add_patch(pat.Circle(xy = (redlist.field.obstacles[i,0], redlist.field.obstacles[i,1]), radius = redlist.field.obstacles[i,2], fill = True, color = 'black'))
 #ax.contourf(redlist.field.x,redlist.field.y,redlist.field.z,cmap='Blues',levels=20)
 #シミュレーションターン数
-for i in range(5000):
+for i in tqdm.tqdm(range(100000)):
     redlist.action(4)
-    if(i%400 == 390):
+    if(i%450 == 400):
         redlist.virtual_container_control()
-    if(i%50==0):
+"""
+    if(i%10==0):
         xy = []
         anker_bool = []
         number_to_container = []
@@ -70,21 +72,33 @@ for i in range(5000):
         for j in range(len(width)):
             width[j] /= pathsizemax
             width[j] *= 10
-        lc = collections.LineCollection(line, linewidths = width, color = (0.0,0.7,0.5,0.3))
+        lc = collections.LineCollection(line, linewidths = width, color = (0.0,0.5,0.2,0.2))
         blood_norm = np.linalg.norm(blood_vectol, axis=1, ord=2)
         blood_norm += 0.001
         ims.append([
                     plt.scatter(xy[:,0],xy[:,1],c="red"),
-                    plt.scatter(xy_anker[:,0],xy_anker[:,1],c = number_to_container, cmap="rainbow"),
-                    ax.add_collection(lc),
-                    plt.quiver(xy_anker[:,0], xy_anker[:,1], blood_vectol[:,0]/blood_norm*30, blood_vectol[:,1]/blood_norm*30, blood_norm, color='red', angles='xy',scale_units='xy', scale=8.0),
+                    plt.scatter(xy_anker[:,0],xy_anker[:,1],c = number_to_container,vmin=0, vmax=9, cmap="CMRmap"),
+                    ax.add_collection(lc)
+                    #plt.quiver(xy_anker[:,0], xy_anker[:,1], blood_vectol[:,0]/blood_norm*30, blood_vectol[:,1]/blood_norm*30, blood_norm, color='red', angles='xy',scale_units='xy', scale=8.0),
                     #plt.scatter(redlist.container.position[0],redlist.container.position[1],c="black", s= 200),
                     ])#,ax.imshow(redlist.field.map)])
         print(i)
 plt.xlim(0,MAP_SIZE)
 plt.ylim(0,MAP_SIZE)
 ani = animation.ArtistAnimation(fig, ims, interval=100.0)
-print("saving...")
+print("showing...")
 plt.show()
+print("saving...")
 ani.save('sample.gif', writer="pillow")
+print("saved.")
+"""
+fig.clf()
+fig = plt.figure(figsize=(6, 6), dpi=120)
+ax = fig.add_subplot(aspect='1')
+lines = [[(redlist.field.walls[i,0], redlist.field.walls[i,1]), (redlist.field.walls[i,2], redlist.field.walls[i,3])] for i in range(redlist.field.walls.shape[0])]
+lc = collections.LineCollection(lines, linewidths=2)
+ax.add_collection(lc)
+plt.plot(redlist.cont_path[:,0],redlist.cont_path[:,1],c = "black")
+print("showing...")
+plt.show()
 print("done.")
