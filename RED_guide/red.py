@@ -155,7 +155,7 @@ class Red:
             norm = np.linalg.norm(t)
             if(norm <= 0.0 and self.num == 0):
                 self.time+=1
-                if(self.time > 20 + self.number_to_container * 20):#撤退条件
+                if(self.time > 20 + self.number_to_container * 30):#撤退条件
                     self.mode = 2
                     self.time = 0
                     return 2

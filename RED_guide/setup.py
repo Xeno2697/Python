@@ -1,13 +1,14 @@
 from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
+from Cython.Build import cythonize
 
 import numpy as np
 
 sourcefiles = ['/RED_guide/class/field.pyx']
 setup(
     cmdclass = {'build_ext':build_ext},
-    ext_modules = cythonize('field_compiled', sourcefiles)],
+    ext_modules = [cythonize('field_compiled', sourcefiles)],
     include_dirs = [np.get_include()]
 )
 """

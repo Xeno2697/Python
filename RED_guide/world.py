@@ -40,12 +40,12 @@ class World:
         self.path = Path(n)
         
         self.field = Field(mapsize)
-        self.field.set_wall(20,60,20,40)
-        self.field.set_wall(20,60,40,60)
-        self.field.set_wall(40,60,20,40)
-        self.field.set_wall(40,20,60,20)
-        self.field.set_wall(40,20,60,40)
-        self.field.set_wall(60,20,60,40)
+        #self.field.set_wall(20,60,20,40)
+        #self.field.set_wall(20,60,40,60)
+        #self.field.set_wall(40,60,20,40)
+        #self.field.set_wall(40,20,60,20)
+        #self.field.set_wall(40,20,60,40)
+        #self.field.set_wall(60,20,60,40)
         
         self.list = [0 for _ in range(n)]
         for i in range(n):

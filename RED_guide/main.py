@@ -25,22 +25,41 @@ RED_NUM = 30
  
                   
 redlist = World(RED_NUM,MAP_SIZE)
+heatmap_value = np.zeros((MAP_SIZE,MAP_SIZE))
+
+#シミュレーションターン数
+def heatmap():
+    for i in range(RED_NUM):
+        x = redlist.list[i].position[0]
+        y = redlist.list[i].position[1]
+        x = round(x)
+        y = round(y)
+        if(x >= MAP_SIZE):
+            x = MAP_SIZE-1
+        if(y >= MAP_SIZE):
+            y = MAP_SIZE-1
+        heatmap_value[x,y] += 1
+def rate_of_coverage():
+    a = 0
+    for i in range(MAP_SIZE):
+        for j in range(MAP_SIZE):
+            if(heatmap_value[i,j] > 0):
+                a += 1
+    return (a / MAP_SIZE / MAP_SIZE)
+
 ims = []
-fig = plt.figure(figsize=(6, 6), dpi=120)
-ax = fig.add_subplot(aspect='1')
+fig = plt.figure(figsize=(12, 6), dpi=120)
+ax = fig.add_subplot(121, aspect=1)
+ax2 = fig.add_subplot(122)
 lines = [[(redlist.field.walls[i,0], redlist.field.walls[i,1]), (redlist.field.walls[i,2], redlist.field.walls[i,3])] for i in range(redlist.field.walls.shape[0])]
 lc = collections.LineCollection(lines, linewidths=2)
+plt.xlim(0,MAP_SIZE)
+plt.ylim(0,MAP_SIZE)
 ax.add_collection(lc)
-#for i in range(redlist.field.obstacles.shape[0]):
-#    ax.add_patch(pat.Circle(xy = (redlist.field.obstacles[i,0], redlist.field.obstacles[i,1]), radius = redlist.field.obstacles[i,2], fill = True, color = 'black'))
-#ax.contourf(redlist.field.x,redlist.field.y,redlist.field.z,cmap='Blues',levels=20)
-#シミュレーションターン数
-for i in tqdm.tqdm(range(100000)):
-    redlist.action(4)
-    if(i%450 == 400):
-        redlist.virtual_container_control()
-"""
-    if(i%10==0):
+
+
+
+def draw_red_behavior():
         xy = []
         anker_bool = []
         number_to_container = []
@@ -75,16 +94,90 @@ for i in tqdm.tqdm(range(100000)):
         lc = collections.LineCollection(line, linewidths = width, color = (0.0,0.5,0.2,0.2))
         blood_norm = np.linalg.norm(blood_vectol, axis=1, ord=2)
         blood_norm += 0.001
-        ims.append([
-                    plt.scatter(xy[:,0],xy[:,1],c="red"),
-                    plt.scatter(xy_anker[:,0],xy_anker[:,1],c = number_to_container,vmin=0, vmax=9, cmap="CMRmap"),
-                    ax.add_collection(lc)
-                    #plt.quiver(xy_anker[:,0], xy_anker[:,1], blood_vectol[:,0]/blood_norm*30, blood_vectol[:,1]/blood_norm*30, blood_norm, color='red', angles='xy',scale_units='xy', scale=8.0),
-                    #plt.scatter(redlist.container.position[0],redlist.container.position[1],c="black", s= 200),
-                    ])#,ax.imshow(redlist.field.map)])
-        print(i)
-plt.xlim(0,MAP_SIZE)
-plt.ylim(0,MAP_SIZE)
+        return [
+                plt.scatter(xy[:,0],xy[:,1],c="red"),
+                plt.scatter(xy_anker[:,0],xy_anker[:,1],c = number_to_container,vmin=0, vmax=9, cmap="CMRmap"),
+                ax.add_collection(lc)
+                #plt.quiver(xy_anker[:,0], xy_anker[:,1], blood_vectol[:,0]/blood_norm*30, blood_vectol[:,1]/blood_norm*30, blood_norm, color='red', angles='xy',scale_units='xy', scale=8.0),
+                #plt.scatter(redlist.container.position[0],redlist.container.position[1],c="black", s= 200),
+                ]
+def draw_heatmap():
+    return [ax.pcolor(heatmap_value, cmap=plt.cm.BuGn, vmax = 10)]
+rate = []
+
+def fanc(i):
+    ax.cla()
+    ax.add_collection(lc)
+    for j in range(100):
+        redlist.action(4)
+        heatmap()
+
+    xy = []
+    anker_bool = []
+    number_to_container = []
+    blood_vectol = []
+    for j in range(redlist.n):
+        xy.append(redlist.list[j].position)
+        anker_bool.append(redlist.list[j].mode == 1)
+        number_to_container.append(redlist.list[j].number_to_container)
+        blood_vectol.append(redlist.list[j].anker_vectol)
+    xy = np.array(xy)
+    blood_vectol=np.array(blood_vectol)
+    number_to_container = np.array(number_to_container)
+    xy_anker = xy[anker_bool]
+    blood_vectol = blood_vectol[anker_bool] 
+    number_to_container = number_to_container[anker_bool]
+    xy = xy[np.logical_not(anker_bool)]
+    line = []
+    width = []
+    pathsizemax = 0.0
+    for j in range(redlist.n):
+            for k in range(redlist.n - j-1):
+                if(redlist.path.connect[j][j+k+1]):
+                    a = redlist.list[j].position
+                    b = redlist.list[j+k+1].position
+                    line.append([a,b])
+                    width.append(redlist.path.size[j,j+k+1])
+                    if(pathsizemax<redlist.path.size[j,j+k+1]):
+                        pathsizemax = redlist.path.size[j,j+k+1]
+    for j in range(len(width)):
+        width[j] /= pathsizemax
+        width[j] *= 10
+    
+    ax.pcolor(heatmap_value, cmap=plt.cm.BuGn, vmax = 20)
+    lcc = collections.LineCollection(line, linewidths = width, color = (0.0,0.5,0.2,0.2))
+    #ax.scatter(xy[:,1],xy[:,0],c="red")
+    ax.scatter(xy_anker[:,1],xy_anker[:,0],c = number_to_container,vmin=0, vmax=6, cmap="CMRmap")
+    #ax.add_collection(lcc)
+    ax.plot(redlist.cont_path[:,1],redlist.cont_path[:,0],c = "black")
+    
+    ax2.cla()
+    x = np.linspace(0, len(rate), len(rate)+1)
+    rate.append(rate_of_coverage())
+    y = np.array(rate)
+    ax2.plot(x,y,color="g")
+    
+    if(i == 1):
+        redlist.virtual_container_control()
+
+anim = animation.FuncAnimation(fig, fanc, frames = [0,0,0,0,1], interval=1)
+
+# gif 画像として保存する。
+print("Saving...")
+#anim.save("animation3.gif", writer="pillow")
+plt.show()
+plt.close()
+
+"""
+for i in tqdm.tqdm(range(10000)):
+    redlist.action(4)
+    heatmap()
+    if(i%450 == 400):
+        redlist.virtual_container_control()
+    if(i%100 == 0):
+        ims.append(draw_heatmap())
+
+
 ani = animation.ArtistAnimation(fig, ims, interval=100.0)
 print("showing...")
 plt.show()
@@ -92,13 +185,3 @@ print("saving...")
 ani.save('sample.gif', writer="pillow")
 print("saved.")
 """
-fig.clf()
-fig = plt.figure(figsize=(6, 6), dpi=120)
-ax = fig.add_subplot(aspect='1')
-lines = [[(redlist.field.walls[i,0], redlist.field.walls[i,1]), (redlist.field.walls[i,2], redlist.field.walls[i,3])] for i in range(redlist.field.walls.shape[0])]
-lc = collections.LineCollection(lines, linewidths=2)
-ax.add_collection(lc)
-plt.plot(redlist.cont_path[:,0],redlist.cont_path[:,1],c = "black")
-print("showing...")
-plt.show()
-print("done.")
