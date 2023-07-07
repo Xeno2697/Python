@@ -7,10 +7,6 @@ class Field:
     def __init__(self,mapsize = 80):
         self.obstacles = np.array([[0,0,0]])
         self.walls = np.array([[0,0,0,0]])
-        self.set_wall(0,0,mapsize,0)
-        self.set_wall(0,0,0,mapsize)
-        self.set_wall(0,mapsize,mapsize,mapsize)
-        self.set_wall(mapsize,0,mapsize,mapsize)
         self.mapsize = mapsize
         self.x = np.linspace(0, mapsize, 200) #等間隔でデータを０から２０まで20個作成
         self.y = np.linspace(0, mapsize, 200) #等間隔でデータを０から２０まで20個作成
@@ -21,7 +17,15 @@ class Field:
         
     def set_wall(self,x1,y1,x2,y2):
         self.walls = np.append(self.walls, np.array([[x1,y1,x2,y2]]), axis=0)
+    def set_block(self,x,y,size):
+        self.set_wall(x-size,y-size,x-size,y+size)
+        self.set_wall(x-size,y+size,x+size,y+size)
+        self.set_wall(x+size,y-size,x+size,y+size)
+        self.set_wall(x-size,y-size,x+size,y-size)
+        
     def judge_walls(self, x1, y1, x2, y2):
+        if(x2 < 0 or x2 > self.mapsize or y2 < 0 or y2 > self.mapsize):
+            return True
         """True"""
         tc1 = (x1 - x2) * (self.walls[:,1] - y1) + (y1 - y2) * (x1 - self.walls[:,0])
         tc2 = (x1 - x2) * (self.walls[:,3] - y1) + (y1 - y2) * (x1 - self.walls[:,2])

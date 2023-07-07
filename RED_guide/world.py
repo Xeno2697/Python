@@ -1,14 +1,18 @@
 import numpy as np
 import math
 
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib import collections
+
 from container import Container
 from field import Field
 from red import Red
 from path import Path
 
 MAP_SIZE = 80
-RED_POS_X = 20.0
-RED_POS_Y = 30.0
+RED_POS_X = 5.0
+RED_POS_Y = 5.0
 CONTAINER_POS_X = RED_POS_X
 CONTAINER_POS_Y = RED_POS_Y
 CONTAINER_CAPABLE_DISTANCE = 1.0
@@ -40,16 +44,17 @@ class World:
         self.path = Path(n)
         
         self.field = Field(mapsize)
-        #self.field.set_wall(20,60,20,40)
-        #self.field.set_wall(20,60,40,60)
-        #self.field.set_wall(40,60,20,40)
-        #self.field.set_wall(40,20,60,20)
-        #self.field.set_wall(40,20,60,40)
-        #self.field.set_wall(60,20,60,40)
+        #self.field.set_block(20,20,5)
+        #self.field.set_block(20,60,5)
+        #self.field.set_block(60,20,5)
+        #self.field.set_block(60,60,5)
+        #self.field.set_block(40,40,5)
+
         
         self.list = [0 for _ in range(n)]
         for i in range(n):
-            self.list[i] = Red(RED_POS_X-1,RED_POS_Y-1)
+            self.list[i] = Red(RED_POS_X,RED_POS_Y)
+    def set_initial_anchor(self):
         for i in [0,1,2]:
             self.list[i].mode = 1
         self.list[0].number_to_container = 0
@@ -62,6 +67,7 @@ class World:
         self.list[1].position[1] = RED_POS_Y
         self.list[2].position[0] = RED_POS_X
         self.list[2].position[1] = RED_POS_Y+5
+    
     def restart(self):
         for i in range(self.n):
             self.list[i].number_to_goal = 0
@@ -73,7 +79,7 @@ class World:
             self.list[i].num = 0      
     def search(self,i):
         vectol = np.zeros(2)
-        anker_bool = self.list[i].mode == 1
+        anker_bool = (self.list[i].mode == 1)
         marker_list = []
         for j in range(self.n):
             if(j == i):
@@ -250,6 +256,7 @@ class World:
             if(no != 0.0):
                 vectol += v * blood[j] / no
         return vectol     
+    
     def action(self,mode = 0):
         """
         if(mode == 0):
@@ -369,3 +376,16 @@ class World:
                             self.path.toconnect(i, [data[j]['number']], [data[j]['distance']], [0.0])
                 elif(self.list[i].mode == 2):
                     next_mode = self.list[i].action_returnee(self.field, self.search(i))
+        if(mode == 5):#完全ランダム、ブラウン運動探索、通信なし
+            for i in range(self.n):
+                self.list[i].move_random(self.field)
+def __init__():
+    world = World(30,80)
+    fig = plt.figure(figsize=(12, 6), dpi=120)
+    ax = fig.add_subplot(111, aspect=1)
+    lines = [[(world.field.walls[i,1], world.field.walls[i,0]), (world.field.walls[i,3], world.field.walls[i,2])] for i in range(world.field.walls.shape[0])]
+    lc = collections.LineCollection(lines, linewidths=2)
+    plt.xlim(0,MAP_SIZE)
+    plt.ylim(0,MAP_SIZE)
+    ax.add_collection(lc)
+    plt.show()

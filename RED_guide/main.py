@@ -25,7 +25,10 @@ RED_NUM = 30
  
                   
 redlist = World(RED_NUM,MAP_SIZE)
+redlist.set_initial_anchor()
 heatmap_value = np.zeros((MAP_SIZE,MAP_SIZE))
+
+#redlist2 = World(RED_NUM,MAP_SIZE)
 
 #シミュレーションターン数
 def heatmap():
@@ -48,10 +51,11 @@ def rate_of_coverage():
     return (a / MAP_SIZE / MAP_SIZE)
 
 ims = []
-fig = plt.figure(figsize=(12, 6), dpi=120)
-ax = fig.add_subplot(121, aspect=1)
+fig = plt.figure(figsize=(12, 12), dpi=120)
+ax = fig.add_subplot(221, aspect=1)
 ax2 = fig.add_subplot(122)
-lines = [[(redlist.field.walls[i,0], redlist.field.walls[i,1]), (redlist.field.walls[i,2], redlist.field.walls[i,3])] for i in range(redlist.field.walls.shape[0])]
+ax3 = fig.add_subplot(223, aspect=1)
+lines = [[(redlist.field.walls[i,1], redlist.field.walls[i,0]), (redlist.field.walls[i,3], redlist.field.walls[i,2])] for i in range(redlist.field.walls.shape[0])]
 lc = collections.LineCollection(lines, linewidths=2)
 plt.xlim(0,MAP_SIZE)
 plt.ylim(0,MAP_SIZE)
@@ -95,73 +99,90 @@ def draw_red_behavior():
         blood_norm = np.linalg.norm(blood_vectol, axis=1, ord=2)
         blood_norm += 0.001
         return [
-                plt.scatter(xy[:,0],xy[:,1],c="red"),
-                plt.scatter(xy_anker[:,0],xy_anker[:,1],c = number_to_container,vmin=0, vmax=9, cmap="CMRmap"),
+                ax.scatter(xy[:,0],xy[:,1],c="red"),
+                ax.scatter(xy_anker[:,0],xy_anker[:,1],c = number_to_container,vmin=0, vmax=9, cmap="CMRmap"),
                 ax.add_collection(lc)
                 #plt.quiver(xy_anker[:,0], xy_anker[:,1], blood_vectol[:,0]/blood_norm*30, blood_vectol[:,1]/blood_norm*30, blood_norm, color='red', angles='xy',scale_units='xy', scale=8.0),
                 #plt.scatter(redlist.container.position[0],redlist.container.position[1],c="black", s= 200),
                 ]
 def draw_heatmap():
-    return [ax.pcolor(heatmap_value, cmap=plt.cm.BuGn, vmax = 10)]
+    return [ax.pcolor(heatmap_value, cmap=plt.cm.BuGn, vmax = 20)]
 rate = []
 
 def fanc(i):
-    ax.cla()
-    ax.add_collection(lc)
-    for j in range(100):
+    for j in range(80):
         redlist.action(4)
         heatmap()
 
     xy = []
     anker_bool = []
     number_to_container = []
-    blood_vectol = []
+    #blood_vectol = []
+    vec = np.zeros(2)
+    vec_pos = np.zeros(2)
     for j in range(redlist.n):
         xy.append(redlist.list[j].position)
         anker_bool.append(redlist.list[j].mode == 1)
         number_to_container.append(redlist.list[j].number_to_container)
-        blood_vectol.append(redlist.list[j].anker_vectol)
+        if(redlist.list[j].number_to_container == 0):
+            vec = redlist.list[j].anker_vectol
+            vec_pos = redlist.list[j].position
+    #    blood_vectol.append(redlist.list[j].anker_vectol)
     xy = np.array(xy)
-    blood_vectol=np.array(blood_vectol)
+    #blood_vectol=np.array(blood_vectol)
     number_to_container = np.array(number_to_container)
     xy_anker = xy[anker_bool]
-    blood_vectol = blood_vectol[anker_bool] 
+    #blood_vectol = blood_vectol[anker_bool] 
     number_to_container = number_to_container[anker_bool]
     xy = xy[np.logical_not(anker_bool)]
-    line = []
-    width = []
-    pathsizemax = 0.0
-    for j in range(redlist.n):
-            for k in range(redlist.n - j-1):
-                if(redlist.path.connect[j][j+k+1]):
-                    a = redlist.list[j].position
-                    b = redlist.list[j+k+1].position
-                    line.append([a,b])
-                    width.append(redlist.path.size[j,j+k+1])
-                    if(pathsizemax<redlist.path.size[j,j+k+1]):
-                        pathsizemax = redlist.path.size[j,j+k+1]
-    for j in range(len(width)):
-        width[j] /= pathsizemax
-        width[j] *= 10
+    #line = []
+    #width = []
+    #pathsizemax = 0.0
+    #for j in range(redlist.n):
+    #        for k in range(redlist.n - j-1):
+    #            if(redlist.path.connect[j][j+k+1]):
+    #                a = redlist.list[j].position
+    #                b = redlist.list[j+k+1].position
+    #                line.append([a,b])
+    #                width.append(redlist.path.size[j,j+k+1])
+    #                if(pathsizemax<redlist.path.size[j,j+k+1]):
+    #                    pathsizemax = redlist.path.size[j,j+k+1]
+    #for j in range(len(width)):
+    #    width[j] /= pathsizemax
+    #    width[j] *= 10
+    #blood_norm = np.linalg.norm(blood_vectol, axis=1, ord=2)
+    #blood_norm += 0.001
     
-    ax.pcolor(heatmap_value, cmap=plt.cm.BuGn, vmax = 20)
-    lcc = collections.LineCollection(line, linewidths = width, color = (0.0,0.5,0.2,0.2))
-    #ax.scatter(xy[:,1],xy[:,0],c="red")
-    ax.scatter(xy_anker[:,1],xy_anker[:,0],c = number_to_container,vmin=0, vmax=6, cmap="CMRmap")
-    #ax.add_collection(lcc)
-    ax.plot(redlist.cont_path[:,1],redlist.cont_path[:,0],c = "black")
-    
+    ax.cla()
     ax2.cla()
+    ax3.cla()
+    
+    ax.add_collection(lc)
+    ax.set_xlim((0.0,float(MAP_SIZE)))
+    ax.set_ylim((0.0,float(MAP_SIZE)))
+    #ax3.add_collection(lc)
+    ax3.pcolor(heatmap_value, cmap=plt.cm.gray, vmax = 20)
+    #lcc = collections.LineCollection(line, linewidths = width, color = (0.0,0.5,0.2,0.2))
+    #ax.quiver(xy_anker[:,1], xy_anker[:,0], blood_vectol[:,1]/blood_norm*30, blood_vectol[:,0]/blood_norm*30, blood_norm, color='red', angles='xy',scale_units='xy', scale=8.0)
+    ax.quiver(vec_pos[1], vec_pos[0], vec[1], vec[0], color='red', angles='xy',scale_units='xy', scale=50)
+    ax3.set_xlim((0.0,float(MAP_SIZE)))
+    ax3.set_ylim((0.0,float(MAP_SIZE)))
+    ax.scatter(xy[:,1],xy[:,0],c="green")
+    ax.scatter(xy_anker[:,1],xy_anker[:,0],c = number_to_container,vmin=0, vmax=8, cmap="CMRmap")
+    #ax.add_collection(lcc)
+    ax3.plot(redlist.cont_path[:,1],redlist.cont_path[:,0],c = "red")
+    
+    
     x = np.linspace(0, len(rate), len(rate)+1)
     rate.append(rate_of_coverage())
     y = np.array(rate)
     ax2.plot(x,y,color="g")
+    ax2.set_ylim((0.0,1.0))
     
     if(i == 1):
         redlist.virtual_container_control()
 
-anim = animation.FuncAnimation(fig, fanc, frames = [0,0,0,0,1], interval=1)
-
+anim = animation.FuncAnimation(fig, fanc, frames = [0,0,0,1], interval=1)
 # gif 画像として保存する。
 print("Saving...")
 #anim.save("animation3.gif", writer="pillow")
@@ -169,13 +190,13 @@ plt.show()
 plt.close()
 
 """
-for i in tqdm.tqdm(range(10000)):
+for i in tqdm.tqdm(range(8000)):
     redlist.action(4)
     heatmap()
     if(i%450 == 400):
         redlist.virtual_container_control()
-    if(i%100 == 0):
-        ims.append(draw_heatmap())
+    if(i%40 == 0):
+        ims.append(draw_red_behavior())
 
 
 ani = animation.ArtistAnimation(fig, ims, interval=100.0)
