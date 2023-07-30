@@ -44,11 +44,11 @@ class World:
         self.path = Path(n)
         
         self.field = Field(mapsize)
-        #self.field.set_block(20,20,5)
-        #self.field.set_block(20,60,5)
-        #self.field.set_block(60,20,5)
-        #self.field.set_block(60,60,5)
-        #self.field.set_block(40,40,5)
+        self.field.set_block(20,20,5)
+        self.field.set_block(20,60,5)
+        self.field.set_block(60,20,5)
+        self.field.set_block(60,60,5)
+        self.field.set_block(40,40,5)
 
         
         self.list = [0 for _ in range(n)]

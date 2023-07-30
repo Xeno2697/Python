@@ -110,6 +110,10 @@ def draw_heatmap():
 rate = []
 
 def fanc(i):
+    if((i+1)%5 == 0):
+        i = 1
+    else:
+        i = 0
     for j in range(80):
         redlist.action(4)
         heatmap()
@@ -182,12 +186,12 @@ def fanc(i):
     if(i == 1):
         redlist.virtual_container_control()
 
-anim = animation.FuncAnimation(fig, fanc, frames = [0,0,0,1], interval=1)
+anim = animation.FuncAnimation(fig, fanc, frames = range(200), interval=1)
 # gif 画像として保存する。
 print("Saving...")
 #anim.save("animation3.gif", writer="pillow")
 plt.show()
-plt.close()
+anim.save('sample.gif', writer="pillow")
 
 """
 for i in tqdm.tqdm(range(8000)):
