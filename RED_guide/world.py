@@ -379,6 +379,10 @@ class World:
         if(mode == 5):#完全ランダム、ブラウン運動探索、通信なし
             for i in range(self.n):
                 self.list[i].move_random(self.field)
+        if(mode == 6):#感情メインで行動を起こす。
+            for i in range(self.n):
+                data = self.search(i)
+                self.list[i].move_emotionally(self.path, self.field, data)
 def __init__():
     world = World(30,80)
     fig = plt.figure(figsize=(12, 6), dpi=120)

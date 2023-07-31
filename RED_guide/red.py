@@ -23,6 +23,10 @@ class Red:
         self.anker_number = 0
         self.credibility = 0.0
         
+        #感情パラメータ
+        self.pleasure = 0.0
+        self.arousing = 0.0
+        
         #協調用パラメータ
         self.number_of_supporters = 0 #自身の意見に同調するREDの数、大きいほど優先率が高い
         
@@ -211,3 +215,14 @@ class Red:
             rad = math.atan2(vec[1], vec[0])
             self.rotate(rad)
         self.forward()
+        
+    def move_emotionally(self, path:Path, field:Field, search_data):
+        """REDを感情的に振舞わせるコード、ラッセルの感情円環にインスピレーションを受けた。
+            input
+                Path
+                Field
+                search_data
+            output
+                None
+        """
+        
