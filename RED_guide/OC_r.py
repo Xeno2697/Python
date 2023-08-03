@@ -17,7 +17,7 @@ print("Number of Hats : " + str(joy.get_numhats()))
 class udpsend():
     def __init__(self):
 
-        SrcIP = "192.168.1.110"                             # 送信元IP
+        SrcIP = "192.168.1.112"                             # 送信元IP
         SrcPort = 22                                # 送信元ポート番号
         self.SrcAddr = (SrcIP,SrcPort)                  # アドレスをtupleに格納
 

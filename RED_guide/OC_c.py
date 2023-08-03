@@ -34,7 +34,7 @@ def main():
     sock.settimeout(0.5)
     
     # search Broker IPAdress using UDP
-    while True:
+    #while True:
         image = search()
         cv2.imshow("Camera", image)
         
