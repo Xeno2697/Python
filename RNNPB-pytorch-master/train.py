@@ -10,14 +10,32 @@ import matplotlib.pyplot as plt
 from RNNPB import RNNPB
 
 
+class RMSLELoss(nn.Module):
+
+    def __init__(self, epsilon=1e-5):
+        super().__init__()
+        self.mse_loss = nn.MSELoss()
+        self.epsilon = epsilon
+
+    def forward(self, y_pred, y_true):
+        clamped_y_pred = torch.clamp(y_pred, min=0.)
+        log_y_pred = torch.log1p(clamped_y_pred)
+        log_y_true = torch.log1p(y_true)
+        msle = self.mse_loss(log_y_pred, log_y_true)
+        # ゼロ除算が生じないように小さな値を足す
+        rmsle_loss = torch.sqrt(msle + self.epsilon)
+        return rmsle_loss
+
 if __name__ == '__main__':
+    torch.autograd.set_detect_anomaly(True)
     # set ramdom seed to 0
     np.random.seed(0)
     torch.manual_seed(0)
     # load data and make training set
     data = torch.load('traindata.pt')
-    input = Variable(torch.from_numpy(data[:, :-1]), requires_grad=False)#Exclude one at the end.
-    target = Variable(torch.from_numpy(data[:, 1:]), requires_grad=False)#Exclude one at the start
+    input = Variable(torch.from_numpy(data[:, :, :-1]), requires_grad=False)#Exclude one at the end.
+    
+    target = Variable(torch.from_numpy(data[:, :, 1:].transpose(0,2,1)), requires_grad=False)#Exclude one at the start
     # build the model
     seq = RNNPB()
     seq.double()
@@ -28,7 +46,7 @@ if __name__ == '__main__':
 
     print(list(seq.parameters()))
     #begin to train
-    for i in range(50):
+    for i in range(500):
         print('STEP: ', i)
         def closure():
             optimizer.zero_grad()
@@ -40,15 +58,15 @@ if __name__ == '__main__':
         optimizer.step(closure)
 
         # begin to predict
-        pred = seq.forward(input[:], GENERATE=True)
-
+        #pred = seq.forward(input[:], GENERATE=True)
         # When you want to test with a single Parametric bias value
-        #pb = seq.pb.data
+        pb = seq.pb.data
+        print(pb)
         #seq.pb.data = pb[0].view(1, 2)
         #pred = seq.forward(input[0].resize(1, 99), GENERATE=True)
         #seq.pb.data=pb
 
-        y = pred.data.cpu().numpy()
+        #y = pred.data.cpu().numpy()
         # draw the result
         #plt.cla()
         #plt.figure(figsize=(30, 10))

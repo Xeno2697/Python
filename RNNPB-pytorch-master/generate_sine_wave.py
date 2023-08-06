@@ -1,33 +1,25 @@
 import math
+import csv
 import numpy as np
 import torch
-from matplotlib import pyplot as plt
-T = 30
-L = 100
-N = 6
-np.random.seed(2)
-x = np.empty((N, L), 'int64')
+import matplotlib.pyplot as plt
 
-x[:] = np.array(range(L))
+L = 250
+PATH = "C:/Users/kaede/ドキュメント/code/Python/data/"
+FILEDATA = ["con01","fl01","car01","cc01","fc01","cac01"]
+N = len(FILEDATA)
 
-data = np.empty((N, L), 'float64')
+data = np.empty((N, 6, L), 'float64')
+for i in range(N):
+    with open(PATH+FILEDATA[i]+".csv") as f:
+        reader = csv.reader(f)
+        c = [row[1:7] for row in reader]
+        data[i,:,:] = np.array(c).T
 
-data[0] = np.sin(x[0] / 1.0 / T).astype('float64')
-
-data[1] = np.sin(x[0] / 1.0 / (2*T)).astype('float64')
-data[1]*=0.75
-#data[1]+= 0.05*np.random.rand(1,L).flatten()
-
-data[2] = np.sin(x[0] / 1.0 / (4*T)).astype('float64')
-data[2]*=0.5
-#data[2]+= 0.2*np.random.rand(1,L).flatten()
-
-plt.plot(range(L),data[0],'r')
-plt.plot(range(L),data[1],'g')
-plt.plot(range(L),data[2],'b')
-
+plt.plot(range(L),data[0,0,:],'r')
+plt.plot(range(L),data[0,1,:],'g')
+plt.plot(range(L),data[0,2,:],'b')
 plt.show()
 
-print(data.shape)
 torch.save(data, open('traindata.pt', 'wb'))
 

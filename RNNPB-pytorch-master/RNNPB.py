@@ -12,12 +12,11 @@ import matplotlib.pyplot as plt
 class RNNPB(nn.Module):
     def __init__(self):
         super(RNNPB, self).__init__()
-
-        self.data_dim=1
-        self.data_num=3
-        self.ctx_dim = 20
+        self.data_dim=6
+        self.data_num=6
+        self.ctx_dim = 120
         self.pb_dim=2
-        self.hidden_dim=40
+        self.hidden_dim=180
         self.input_dim = self.data_dim + self.pb_dim + self.ctx_dim
         self.output_dim = self.data_dim + self.ctx_dim
 
@@ -41,13 +40,13 @@ class RNNPB(nn.Module):
 
     def forward(self,data,GENERATE=False):
         outputs = []
-
         ctx = Variable(torch.zeros(data.size(0), self.ctx_dim).double(),requires_grad=True)
         out = Variable(torch.zeros(data.size(0), self.data_dim).double(),requires_grad=True)
-        for i, input_t in enumerate(data.chunk(data.size(1), dim=1)):
+        for i, input_t in enumerate(data.chunk(data.size(2),dim=2)):
             if GENERATE:
                 out, ctx = self.RNNPBCell(out,ctx)
             else:
+                input_t = torch.reshape(input_t, (self.data_num,self.data_dim))
                 out, ctx = self.RNNPBCell(input_t,ctx)
             outputs += [out]
         outputs = torch.stack(outputs, 1).squeeze(2)
