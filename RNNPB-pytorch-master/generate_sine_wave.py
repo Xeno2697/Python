@@ -4,7 +4,7 @@ import torch
 from matplotlib import pyplot as plt
 T = 30
 L = 100
-N = 3
+N = 6
 np.random.seed(2)
 x = np.empty((N, L), 'int64')
 
