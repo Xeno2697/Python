@@ -9,25 +9,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from RNNPB import RNNPB
 
-
-class RMSLELoss(nn.Module):
-
-    def __init__(self, epsilon=1e-5):
-        super().__init__()
-        self.mse_loss = nn.MSELoss()
-        self.epsilon = epsilon
-
-    def forward(self, y_pred, y_true):
-        clamped_y_pred = torch.clamp(y_pred, min=0.)
-        log_y_pred = torch.log1p(clamped_y_pred)
-        log_y_true = torch.log1p(y_true)
-        msle = self.mse_loss(log_y_pred, log_y_true)
-        # ゼロ除算が生じないように小さな値を足す
-        rmsle_loss = torch.sqrt(msle + self.epsilon)
-        return rmsle_loss
-
 if __name__ == '__main__':
-    torch.autograd.set_detect_anomaly(True)
+    
+    torch.autograd.set_detect_anomaly(True)#TrueにするとNanエラー検出
+    
     # set ramdom seed to 0
     np.random.seed(0)
     torch.manual_seed(0)
@@ -51,7 +36,7 @@ if __name__ == '__main__':
         def closure():
             optimizer.zero_grad()
             out = seq.forward(input)
-            loss = criterion(out, target)
+            loss = criterion(out + 1e-12, target)#アンダーフロー回避
             print('loss:', loss.data.cpu().numpy())
             loss.backward()
             return loss
