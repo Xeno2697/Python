@@ -30,7 +30,6 @@ class udpsend():
 
     def send(self,data):
         data = data.encode('utf-8')                     # バイナリに変換
-
         self.udpClntSock.sendto(data, self.DstAddr)     # 宛先アドレスに送信
 
 udp = udpsend()
